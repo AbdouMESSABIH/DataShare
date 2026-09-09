@@ -1,0 +1,17 @@
+# Backend
+backend/target/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Variables sensibles
+.env
+
+# Stockage local des fichiers DataShare
+uploads/
+
+# IDE / système
+.vscode/
+.idea/
+*.log
