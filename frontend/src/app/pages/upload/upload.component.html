@@ -1,0 +1,84 @@
+<section class="upload-page">
+
+  <div class="upload-card">
+
+    <h1>Téléverser un fichier</h1>
+
+    <form (ngSubmit)="onSubmit()">
+
+      <div class="form-group">
+        <label for="file">Fichier</label>
+
+        <input
+          id="file"
+          type="file"
+          (change)="onFileSelected($event)"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="expirationDays">
+          Durée avant expiration
+        </label>
+
+        <select
+          id="expirationDays"
+          name="expirationDays"
+          [(ngModel)]="expirationDays"
+        >
+          <option [ngValue]="1">1 jour</option>
+          <option [ngValue]="2">2 jours</option>
+          <option [ngValue]="3">3 jours</option>
+          <option [ngValue]="4">4 jours</option>
+          <option [ngValue]="5">5 jours</option>
+          <option [ngValue]="6">6 jours</option>
+          <option [ngValue]="7">7 jours</option>
+        </select>
+      </div>
+
+      <button type="submit">
+        Téléverser
+      </button>
+
+    </form>
+
+    <p class="success" *ngIf="message">
+      {{ message }}
+    </p>
+
+    <p class="error" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </p>
+
+    <div class="result" *ngIf="uploadResult">
+
+      <h2>Fichier partagé</h2>
+
+      <p>
+        <strong>Nom :</strong>
+        {{ uploadResult.originalName }}
+      </p>
+
+      <p>
+        <strong>Taille :</strong>
+        {{ uploadResult.size }} octets
+      </p>
+
+      <p>
+        <strong>Expiration :</strong>
+        {{ uploadResult.expiresAt | date:'yyyy-MM-dd HH:mm' }}
+      </p>
+
+      <p>
+        <strong>Token de téléchargement :</strong>
+      </p>
+
+      <code>
+        {{ uploadResult.downloadToken }}
+      </code>
+
+    </div>
+
+  </div>
+
+</section>
