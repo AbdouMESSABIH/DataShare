@@ -1,0 +1,69 @@
+<section class="login-page">
+
+  <div class="login-card">
+
+    <h1>Se connecter</h1>
+
+    <p>
+      Connectez-vous à votre compte DataShare.
+    </p>
+
+    <form #loginForm="ngForm" (ngSubmit)="onSubmit()">
+
+      <div class="form-group">
+        <label for="email">Adresse email</label>
+
+        <input
+          id="email"
+          type="email"
+          name="email"
+          [(ngModel)]="email"
+          #emailInput="ngModel"
+          required
+          email
+          placeholder="exemple@email.com"
+        >
+
+        <p *ngIf="emailInput.invalid && emailInput.touched">
+          Veuillez saisir une adresse email valide.
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+
+        <input
+          id="password"
+          type="password"
+          name="password"
+          [(ngModel)]="password"
+          #passwordInput="ngModel"
+          required
+          placeholder="Votre mot de passe"
+        >
+
+        <p *ngIf="passwordInput.errors?.['required'] && passwordInput.touched">
+          Le mot de passe est obligatoire.
+        </p>
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="loginForm.invalid"
+      >
+        Se connecter
+      </button>
+
+    </form>
+
+    <p *ngIf="message">
+      {{ message }}
+    </p>
+
+    <p *ngIf="errorMessage">
+      {{ errorMessage }}
+    </p>
+
+  </div>
+
+</section>
