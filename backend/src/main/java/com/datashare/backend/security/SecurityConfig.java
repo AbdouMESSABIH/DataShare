@@ -50,7 +50,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/register",
                                 "/api/auth/login",
-                                "/error"
+                                "/error",
+                                "/api/download/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

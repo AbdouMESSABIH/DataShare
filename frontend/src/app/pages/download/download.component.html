@@ -1,0 +1,44 @@
+<section class="download-page">
+
+  <div class="download-card">
+
+    <h1>Télécharger un fichier</h1>
+
+    <p class="error" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </p>
+
+    <div *ngIf="fileInfo">
+
+      <p>
+        <strong>Nom :</strong>
+        {{ fileInfo.originalName }}
+      </p>
+
+      <p>
+        <strong>Taille :</strong>
+        {{ fileInfo.size }} octets
+      </p>
+
+      <p>
+        <strong>Type :</strong>
+        {{ fileInfo.contentType }}
+      </p>
+
+      <p>
+        <strong>Expiration :</strong>
+        {{ fileInfo.expiresAt | date:'yyyy-MM-dd HH:mm' }}
+      </p>
+
+      <a
+        class="download-button"
+        [href]="downloadUrl"
+      >
+        Télécharger le fichier
+      </a>
+
+    </div>
+
+  </div>
+
+</section>

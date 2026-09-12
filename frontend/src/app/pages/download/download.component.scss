@@ -1,0 +1,56 @@
+.download-page {
+  min-height: 100vh;
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  padding: 2rem;
+}
+
+
+.download-card {
+  width: 100%;
+
+  max-width: 500px;
+
+  padding: 2rem;
+
+  border: 1px solid #ddd;
+
+  border-radius: 12px;
+}
+
+
+h1 {
+  margin-bottom: 1.5rem;
+}
+
+
+p {
+  margin-bottom: 1rem;
+}
+
+
+.error {
+  margin-top: 1rem;
+}
+
+
+.download-button {
+  display: inline-block;
+
+  margin-top: 1rem;
+
+  padding: 0.8rem 1.2rem;
+
+  border: 1px solid #ccc;
+
+  border-radius: 6px;
+
+  text-decoration: none;
+
+  cursor: pointer;
+}
