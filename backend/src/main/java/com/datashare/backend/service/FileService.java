@@ -272,4 +272,33 @@ public class FileService {
             ))
             .toList();
     }
+
+
+    public void deleteFile(Long id, String email) {
+
+        StoredFile storedFile = storedFileRepository
+                .findByIdAndOwnerEmail(id, email)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Fichier introuvable"
+                ));
+
+        Path filePath = uploadDirectory.resolve(
+                storedFile.getStorageName()
+        );
+
+        try {
+
+            Files.deleteIfExists(filePath);
+
+        } catch (IOException e) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Impossible de supprimer le fichier"
+                );
+        }
+
+                storedFileRepository.delete(storedFile);
+        }
 }

@@ -41,4 +41,31 @@ export class HistoryComponent implements OnInit {
         }
       });
   }
+
+  deleteFile(id: number): void {
+
+    const confirmed = window.confirm(
+      'Voulez-vous vraiment supprimer ce fichier ?'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.fileService
+      .deleteFile(id)
+      .subscribe({
+
+        next: () => {
+          this.files = this.files.filter(
+            file => file.id !== id
+          );
+        },
+
+        error: () => {
+          this.errorMessage =
+            'Impossible de supprimer le fichier';
+        }
+      });
+  }
 }

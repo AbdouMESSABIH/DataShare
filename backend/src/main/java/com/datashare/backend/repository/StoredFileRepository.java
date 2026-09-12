@@ -11,4 +11,6 @@ public interface StoredFileRepository extends JpaRepository<StoredFile, Long> {
     Optional<StoredFile> findByDownloadToken(String downloadToken);
 
     List<StoredFile> findByOwnerEmailOrderByCreatedAtDesc(String email);
+
+    Optional<StoredFile> findByIdAndOwnerEmail(Long id, String email);
 }

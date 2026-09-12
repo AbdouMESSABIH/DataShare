@@ -42,11 +42,22 @@
         {{ file.expiresAt | date:'yyyy-MM-dd HH:mm' }}
       </p>
 
-      <a
-        [href]="'/download/' + file.downloadToken"
-      >
-        Ouvrir le lien de partage
-      </a>
+      <div class="actions">
+
+        <a
+          [href]="'/download/' + file.downloadToken"
+        >
+          Ouvrir le lien de partage
+        </a>
+
+        <button
+          type="button"
+          (click)="deleteFile(file.id)"
+        >
+          Supprimer
+        </button>
+
+      </div>
 
     </div>
 

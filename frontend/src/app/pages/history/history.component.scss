@@ -6,45 +6,44 @@
   padding: 2rem;
 }
 
-
 .history-card {
   width: 100%;
   max-width: 700px;
 }
 
-
 h1 {
   margin-bottom: 1.5rem;
 }
 
-
 .file-item {
   padding: 1.5rem;
   margin-bottom: 1rem;
-
   border: 1px solid #ddd;
   border-radius: 12px;
 }
-
 
 .file-item p {
   margin: 0.4rem 0;
 }
 
-
-.file-item a {
-  display: inline-block;
-
-  margin-top: 0.8rem;
-
-  text-decoration: none;
-
-  border: 1px solid #ccc;
-  border-radius: 6px;
-
-  padding: 0.6rem 1rem;
+.actions {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 1rem;
 }
 
+.actions a,
+.actions button {
+  padding: 0.6rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.actions button {
+  background: none;
+}
 
 .error {
   margin-bottom: 1rem;
