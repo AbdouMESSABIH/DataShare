@@ -21,6 +21,17 @@ export interface DownloadInfoResponse {
 }
 
 
+export interface FileHistoryResponse {
+  id: number;
+  originalName: string;
+  size: number;
+  contentType: string;
+  downloadToken: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+
 @Injectable({
   providedIn: 'root'
 })
@@ -72,5 +83,20 @@ export class FileService {
   getDownloadUrl(token: string): string {
 
     return `${this.downloadApiUrl}/${token}/file`;
+  }
+
+
+  getHistory(): Observable<FileHistoryResponse[]> {
+
+    const token = localStorage.getItem('token');
+
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`
+    });
+
+    return this.http.get<FileHistoryResponse[]>(
+      this.apiUrl,
+      { headers }
+    );
   }
 }

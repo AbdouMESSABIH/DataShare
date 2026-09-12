@@ -5,6 +5,7 @@ import com.datashare.backend.entity.StoredFile;
 import com.datashare.backend.entity.User;
 import com.datashare.backend.repository.StoredFileRepository;
 import com.datashare.backend.repository.UserRepository;
+import com.datashare.backend.dto.FileHistoryResponse;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import java.util.List;
 
 
 @Service
@@ -251,5 +253,23 @@ public class FileService {
         return uploadDirectory.resolve(
                 storedFile.getStorageName()
         );
+    }
+
+
+    public List<FileHistoryResponse> getHistory(String email) {
+
+        return storedFileRepository
+            .findByOwnerEmailOrderByCreatedAtDesc(email)
+            .stream()
+            .map(storedFile -> new FileHistoryResponse(
+                    storedFile.getId(),
+                    storedFile.getOriginalName(),
+                    storedFile.getSize(),
+                    storedFile.getContentType(),
+                    storedFile.getDownloadToken(),
+                    storedFile.getCreatedAt(),
+                    storedFile.getExpiresAt()
+            ))
+            .toList();
     }
 }

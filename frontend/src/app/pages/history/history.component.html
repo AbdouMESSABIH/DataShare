@@ -1,0 +1,55 @@
+<section class="history-page">
+
+  <div class="history-card">
+
+    <h1>Mes fichiers</h1>
+
+    <p class="error" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </p>
+
+    <p *ngIf="!errorMessage && files.length === 0">
+      Aucun fichier pour le moment.
+    </p>
+
+    <div
+      class="file-item"
+      *ngFor="let file of files"
+    >
+
+      <p>
+        <strong>Nom :</strong>
+        {{ file.originalName }}
+      </p>
+
+      <p>
+        <strong>Taille :</strong>
+        {{ file.size }} octets
+      </p>
+
+      <p>
+        <strong>Type :</strong>
+        {{ file.contentType }}
+      </p>
+
+      <p>
+        <strong>Créé le :</strong>
+        {{ file.createdAt | date:'yyyy-MM-dd HH:mm' }}
+      </p>
+
+      <p>
+        <strong>Expire le :</strong>
+        {{ file.expiresAt | date:'yyyy-MM-dd HH:mm' }}
+      </p>
+
+      <a
+        [href]="'/download/' + file.downloadToken"
+      >
+        Ouvrir le lien de partage
+      </a>
+
+    </div>
+
+  </div>
+
+</section>
