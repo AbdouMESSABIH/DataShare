@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.InvalidMediaTypeException;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -68,10 +69,18 @@ public class DownloadController {
 
         if (storedFile.getContentType() != null) {
 
-            mediaType =
-                    MediaType.parseMediaType(
-                            storedFile.getContentType()
-                    );
+            try {
+
+                mediaType =
+                        MediaType.parseMediaType(
+                                storedFile.getContentType()
+                        );
+
+            } catch (InvalidMediaTypeException e) {
+
+                mediaType =
+                        MediaType.APPLICATION_OCTET_STREAM;
+            }
         }
 
 
