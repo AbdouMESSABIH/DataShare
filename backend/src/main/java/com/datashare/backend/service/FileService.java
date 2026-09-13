@@ -23,9 +23,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Service
 public class FileService {
+
+    private static final Logger log = LoggerFactory.getLogger(FileService.class);
 
     private static final long MAX_FILE_SIZE =
             1024L * 1024 * 1024;
@@ -191,6 +196,13 @@ public class FileService {
         StoredFile savedFile =
                 storedFileRepository.save(storedFile);
 
+                log.atInfo()
+                        .addKeyValue("event", "file_upload")
+                        .addKeyValue("fileId", savedFile.getId())
+                        .addKeyValue("size", savedFile.getSize())
+                        .addKeyValue("owner", savedFile.getOwner().getEmail())
+                        .log("File uploaded successfully");
+
 
         return new UploadResponse(
                 savedFile.getId(),
@@ -241,6 +253,12 @@ public class FileService {
             );
         }
 
+        log.atInfo()
+                .addKeyValue("event", "file_download")
+                .addKeyValue("fileId", storedFile.getId())
+                .addKeyValue("size", storedFile.getSize())
+                .log("File downloaded successfully");
+
 
         return storedFile;
     }
@@ -289,7 +307,7 @@ public class FileService {
 
         try {
 
-            Files.deleteIfExists(filePath);
+                Files.deleteIfExists(filePath);
 
         } catch (IOException e) {
 
@@ -299,6 +317,14 @@ public class FileService {
                 );
         }
 
-                storedFileRepository.delete(storedFile);
+        storedFileRepository.delete(storedFile);
+
+        log.atInfo()
+                .addKeyValue("event", "file_delete")
+                .addKeyValue("fileId", storedFile.getId())
+                .addKeyValue("owner", storedFile.getOwner().getEmail())
+                .log("File deleted successfully");
         }
+
+
 }
