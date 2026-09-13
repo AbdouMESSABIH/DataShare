@@ -1,1 +1,138 @@
-/* You can add global styles to this file, and also import other style files */
+/* =========================
+   Contenu des pages DataShare
+   ========================= */
+
+.app-content h1 {
+    margin-top: 0;
+    margin-bottom: 25px;
+
+    font-size: 27px;
+    font-weight: 800;
+
+    color: #123b67;
+}
+
+.app-content h2 {
+    margin-top: 0;
+    margin-bottom: 24px;
+
+    font-size: 25px;
+    font-weight: 800;
+
+    color: #123b67;
+}
+
+.app-content h3 {
+    font-size: 23px;
+    font-weight: 700;
+
+    color: #123b67;
+}
+
+
+/* Textes */
+
+.app-content p {
+    font-size: 21px;
+    line-height: 1.5;
+}
+
+
+/* Labels */
+
+.app-content label {
+    display: block;
+
+    margin-bottom: 9px;
+
+    font-size: 21px;
+    font-weight: 600;
+
+    color: #1d3553;
+}
+
+
+/* Inputs */
+
+.app-content input,
+.app-content select {
+    box-sizing: border-box;
+
+    min-height: 55px;
+    padding: 11px 15px;
+
+    font-size: 20px;
+
+    border: 1px solid #c5d2df;
+    border-radius: 9px;
+}
+
+
+/* Boutons */
+
+.app-content button {
+    min-height: 58px;
+    padding: 13px 25px;
+
+    font-size: 23px;
+    font-weight: 700;
+
+    border-radius: 10px;
+
+    cursor: pointer;
+}
+
+
+/* Liens à l'intérieur des pages */
+
+.app-content a {
+    font-size: 21px;
+}
+
+
+/* =========================
+   Remonter les composants
+   ========================= */
+
+app-upload,
+app-login,
+app-register,
+app-history {
+    display: block;
+
+    /*
+       Empêche le composant d'être artificiellement
+       descendu par rapport au haut de la page.
+    */
+    margin-top: 0;
+}
+
+
+/* =========================
+   Responsive
+   ========================= */
+
+@media (max-width: 760px) {
+
+    .app-content h1,
+    .app-content h2 {
+        font-size: 23px;
+    }
+
+    .app-content label,
+    .app-content p,
+    .app-content a {
+        font-size: 18px;
+    }
+
+    .app-content input,
+    .app-content select {
+        min-height: 50px;
+        font-size: 18px;
+    }
+
+    .app-content button {
+        min-height: 52px;
+        font-size: 19px;
+    }
+}

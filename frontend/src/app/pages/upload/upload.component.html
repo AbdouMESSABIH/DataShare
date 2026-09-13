@@ -2,21 +2,39 @@
 
   <div class="upload-card">
 
-    <h1>Téléverser un fichier</h1>
+    <h1 id="upload-title">
+      Téléverser un fichier
+    </h1>
 
-    <form (ngSubmit)="onSubmit()">
+
+    <form
+      (ngSubmit)="onSubmit()"
+      aria-labelledby="upload-title"
+    >
 
       <div class="form-group">
-        <label for="file">Fichier</label>
+
+        <label for="file">
+          Fichier
+        </label>
 
         <input
           id="file"
           type="file"
+          aria-describedby="file-help"
           (change)="onFileSelected($event)"
         >
+
+        <p id="file-help">
+          Taille maximale : 1 Go.
+          Les fichiers .exe et .bat ne sont pas autorisés.
+        </p>
+
       </div>
 
+
       <div class="form-group">
+
         <label for="expirationDays">
           Durée avant expiration
         </label>
@@ -25,7 +43,9 @@
           id="expirationDays"
           name="expirationDays"
           [(ngModel)]="expirationDays"
+          aria-describedby="expiration-help"
         >
+
           <option [ngValue]="1">1 jour</option>
           <option [ngValue]="2">2 jours</option>
           <option [ngValue]="3">3 jours</option>
@@ -33,8 +53,15 @@
           <option [ngValue]="5">5 jours</option>
           <option [ngValue]="6">6 jours</option>
           <option [ngValue]="7">7 jours</option>
+
         </select>
+
+        <p id="expiration-help">
+          Le lien de téléchargement peut être valide entre 1 et 7 jours.
+        </p>
+
       </div>
+
 
       <button type="submit">
         Téléverser
@@ -42,17 +69,38 @@
 
     </form>
 
-    <p class="success" *ngIf="message">
+
+    <p
+      class="success"
+      *ngIf="message"
+      role="status"
+      aria-live="polite"
+    >
       {{ message }}
     </p>
 
-    <p class="error" *ngIf="errorMessage">
+
+    <p
+      class="error"
+      *ngIf="errorMessage"
+      role="alert"
+      aria-live="assertive"
+    >
       {{ errorMessage }}
     </p>
 
-    <div class="result" *ngIf="uploadResult">
 
-      <h2>Fichier partagé</h2>
+    <div
+      class="result"
+      *ngIf="uploadResult"
+      role="status"
+      aria-live="polite"
+      aria-labelledby="upload-result-title"
+    >
+
+      <h2 id="upload-result-title">
+        Fichier partagé
+      </h2>
 
       <p>
         <strong>Nom :</strong>

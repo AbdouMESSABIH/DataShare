@@ -1,0 +1,160 @@
+:host {
+    display: block;
+    min-height: 100vh;
+    background: #f6f9fc;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+
+/* =========================
+   Header DataShare
+   ========================= */
+
+.app-header {
+    height: 150px;
+    padding: 10px 45px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    background: #ffffff;
+    border-bottom: 1px solid #dbe5ef;
+
+    box-shadow: 0 2px 12px rgba(15, 52, 96, 0.08);
+}
+
+
+/* =========================
+   Logo + DataShare
+   ========================= */
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+
+    text-decoration: none;
+}
+
+.brand-logo {
+    width: 125px;
+    height: 125px;
+
+    object-fit: contain;
+}
+
+.brand-name {
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -1px;
+
+    background: linear-gradient(
+        90deg,
+        #0b3768 0%,
+        #168bdc 55%,
+        #13b8ad 100%
+    );
+
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+
+/* =========================
+   Navigation
+   ========================= */
+
+.navigation {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+.navigation a {
+    padding: 14px 20px;
+
+    text-decoration: none;
+
+    font-size: 27px;
+    font-weight: 700;
+
+    color: #123b67;
+
+    border-radius: 12px;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.navigation a:hover {
+    color: #ffffff;
+    background: #168bdc;
+
+    transform: translateY(-2px);
+}
+
+
+/* =========================
+   Zone principale
+   ========================= */
+
+.app-content {
+    min-height: calc(100vh - 150px);
+
+    /*
+       Peu d'espace en haut :
+       les formulaires remontent.
+    */
+    padding: 35px 30px 60px;
+
+    background: linear-gradient(
+        180deg,
+        #f7fbff 0%,
+        #f4f8fb 100%
+    );
+}
+
+
+/* =========================
+   Responsive
+   ========================= */
+
+@media (max-width: 900px) {
+
+    .app-header {
+        height: auto;
+        padding: 15px 20px;
+
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .brand-logo {
+        width: 100px;
+        height: 100px;
+    }
+
+    .brand-name {
+        font-size: 38px;
+    }
+
+    .navigation {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .navigation a {
+        font-size: 20px;
+        padding: 10px 14px;
+    }
+
+    .app-content {
+        min-height: auto;
+        padding: 25px 15px;
+    }
+}

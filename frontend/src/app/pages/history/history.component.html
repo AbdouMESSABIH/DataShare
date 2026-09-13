@@ -1,20 +1,39 @@
-<section class="history-page">
+<section
+  class="history-page"
+  aria-labelledby="history-title"
+>
 
   <div class="history-card">
 
-    <h1>Mes fichiers</h1>
+    <h1 id="history-title">
+      Mes fichiers
+    </h1>
 
-    <p class="error" *ngIf="errorMessage">
+
+    <p
+      class="error"
+      *ngIf="errorMessage"
+      role="alert"
+      aria-live="assertive"
+    >
       {{ errorMessage }}
     </p>
 
-    <p *ngIf="!errorMessage && files.length === 0">
+
+    <p
+      *ngIf="!errorMessage && files.length === 0"
+      role="status"
+      aria-live="polite"
+    >
       Aucun fichier pour le moment.
     </p>
+
 
     <div
       class="file-item"
       *ngFor="let file of files"
+      role="group"
+      [attr.aria-label]="'Fichier ' + file.originalName"
     >
 
       <p>
@@ -42,6 +61,7 @@
         {{ file.expiresAt | date:'yyyy-MM-dd HH:mm' }}
       </p>
 
+
       <div class="actions">
 
         <a
@@ -53,6 +73,9 @@
         <button
           type="button"
           (click)="deleteFile(file.id)"
+          [attr.aria-label]="
+            'Supprimer le fichier ' + file.originalName
+          "
         >
           Supprimer
         </button>
