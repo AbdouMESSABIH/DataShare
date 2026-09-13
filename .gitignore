@@ -1,9 +1,15 @@
 # Backend
 backend/target/
+backend/logs/
+backend/test-results/
 
 # Frontend
 frontend/node_modules/
 frontend/dist/
+
+# Rapports temporaires Lighthouse
+frontend/lighthouse-performance.html
+frontend/lighthouse-performance.json
 
 # Variables sensibles
 .env
