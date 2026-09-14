@@ -274,7 +274,7 @@ La couverture du backend est mesurée avec JaCoCo.
 
 Le plugin JaCoCo est intégré à la configuration Maven du backend.
 
-Pour générer le rapport :
+Pour exécuter les tests et générer le rapport de couverture :
 
 ```bash
 cd ~/Projets/DataShare/backend
@@ -282,10 +282,10 @@ cd ~/Projets/DataShare/backend
 export DB_PASSWORD='votre_mot_de_passe_postgresql'
 export JWT_SECRET='votre_secret_jwt'
 
-./mvnw clean test
+./mvnw clean test jacoco:report
 ```
 
-Le rapport HTML est généré dans :
+Le rapport HTML complet est généré localement dans :
 
 ```text
 backend/target/site/jacoco/index.html
@@ -303,6 +303,55 @@ pour le projet.
 
 Le dossier `target` étant un répertoire de build, il n'est pas destiné
 à être versionné directement dans le repository.
+
+---
+
+## Rapports versionnés
+
+Une copie des rapports générés lors de la validation finale est conservée
+dans le dossier `reports/` du repository.
+
+Les résultats détaillés des tests Maven Surefire sont disponibles dans :
+
+```text
+reports/backend-tests/
+```
+
+Ce dossier contient les rapports générés par Maven Surefire pour les tests
+unitaires et les tests d'intégration du backend.
+
+Les rapports de couverture JaCoCo sont disponibles dans :
+
+```text
+reports/coverage/
+```
+
+Les fichiers versionnés sont notamment :
+
+```text
+reports/coverage/jacoco.csv
+reports/coverage/jacoco.xml
+```
+
+Le rapport HTML complet reste généré localement dans :
+
+```text
+backend/target/site/jacoco/index.html
+```
+
+Le dossier `backend/target/` n'est pas versionné car il contient les
+fichiers temporaires produits pendant le build.
+
+La méthode permettant de régénérer les rapports ainsi qu'une description
+de leur contenu sont documentées dans :
+
+```text
+reports/README.md
+```
+
+Cette organisation permet de conserver dans Git des preuves des résultats
+de tests et de couverture tout en évitant de versionner l'ensemble des
+fichiers temporaires de Maven.
 
 ---
 
