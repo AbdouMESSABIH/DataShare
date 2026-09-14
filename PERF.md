@@ -1,553 +1,214 @@
-# DataShare
+# Performance - DataShare
 
-DataShare est une application web de partage sécurisé de fichiers.
+## Objectif
 
-Elle permet à un utilisateur de créer un compte, de s’authentifier,
-de téléverser des fichiers, de générer un lien de téléchargement temporaire,
-de consulter son historique et de supprimer ses fichiers.
+Ce document décrit les vérifications de performance réalisées sur DataShare.
 
-Le projet a été réalisé dans le cadre de la formation
-**Expert DevOps - OpenClassrooms**.
+Les objectifs sont de :
 
----
+- mesurer les performances d'un endpoint backend critique ;
+- vérifier la stabilité du backend sous charge ;
+- mesurer le poids du build frontend ;
+- analyser les performances du frontend avec Lighthouse ;
+- définir un budget de performance ;
+- identifier et mettre en œuvre une optimisation mesurable ;
+- conserver des valeurs de référence pour détecter les régressions.
 
-## 1. Fonctionnalités principales
+Les résultats présentés dans ce document ont été obtenus dans un environnement local.
 
-DataShare permet notamment :
+Ils constituent des références de développement et de non-régression.
 
-- la création d’un compte utilisateur ;
-- l’authentification avec JWT ;
-- le téléversement de fichiers ;
-- la génération d’un token de téléchargement ;
-- la définition d’une durée d’expiration comprise entre 1 et 7 jours ;
-- le téléchargement d’un fichier à partir d’un token ;
-- la consultation de l’historique des fichiers ;
-- la suppression d’un fichier par son propriétaire ;
-- la gestion des erreurs ;
-- la journalisation structurée des opérations principales.
-
-Contraintes principales :
-
-- taille maximale d’un fichier : **1 Go** ;
-- les fichiers `.exe` et `.bat` sont refusés ;
-- les liens expirés ne permettent plus le téléchargement.
+Ils ne représentent pas un benchmark d'une infrastructure de production.
 
 ---
 
-## 2. Architecture
+# 1. Performance backend
 
-L’application est organisée autour de deux parties principales :
+## Outil utilisé
+
+Le test de charge backend est réalisé avec :
 
 ```text
-Utilisateur
-    |
-    v
-Frontend Angular
-    |
-    | API REST / JSON
-    v
-Backend Spring Boot
-    |
-    +--> PostgreSQL
-    |
-    +--> Stockage local des fichiers
+k6
 ```
 
-Le backend utilise une architecture en couches :
-
-```text
-Controller
-    |
-    v
-Service
-    |
-    v
-Repository
-    |
-    v
-PostgreSQL
-```
-
-Responsabilités principales :
-
-- **Controller** : reçoit les requêtes HTTP et retourne les réponses ;
-- **Service** : contient la logique métier ;
-- **Repository** : gère l’accès aux données ;
-- **PostgreSQL** : stocke les utilisateurs et les métadonnées ;
-- **stockage local** : contient les fichiers physiques.
-
----
-
-## 3. Technologies utilisées
-
-### Backend
-
-- Java 21
-- Spring Boot
-- Spring Security
-- Spring Data JPA
-- PostgreSQL
-- JWT
-- Maven
-- JUnit
-- MockMvc
-- JaCoCo
-
-### Frontend
-
-- Angular
-- TypeScript
-- HTML
-- SCSS
-- Playwright
-
-### Qualité, sécurité et performance
-
-- JaCoCo
-- Playwright
-- npm audit
-- k6
-- Lighthouse
-- logs structurés JSON
-
----
-
-## 4. Prérequis
-
-Les outils suivants sont nécessaires :
-
-- Git
-- Java 21
-- Node.js
-- npm
-- PostgreSQL
-
-Sous Fedora :
-
-```bash
-sudo dnf install git java-21-openjdk-devel nodejs npm postgresql-server
-```
-
-Vérification :
-
-```bash
-java --version
-node --version
-npm --version
-psql --version
-git --version
-```
-
----
-
-## 5. Installation du projet
-
-Cloner le repository :
-
-```bash
-git clone https://github.com/AbdouMESSABIH/DataShare.git
-cd DataShare
-```
-
----
-
-## 6. Configuration de PostgreSQL
-
-Initialiser PostgreSQL si nécessaire :
-
-```bash
-sudo postgresql-setup --initdb --unit postgresql
-```
-
-Démarrer PostgreSQL :
-
-```bash
-sudo systemctl enable --now postgresql
-```
-
-Vérifier son état :
-
-```bash
-systemctl status postgresql
-```
-
-Ouvrir PostgreSQL :
-
-```bash
-sudo -u postgres psql
-```
-
-Exemple de création de l’utilisateur et de la base :
-
-```sql
-CREATE USER datashare WITH PASSWORD 'votre_mot_de_passe';
-CREATE DATABASE datashare OWNER datashare;
-```
-
-Quitter PostgreSQL :
-
-```text
-\q
-```
-
-La base utilisée par l’application est :
-
-```text
-datashare
-```
-
-L’utilisateur PostgreSQL utilisé est :
-
-```text
-datashare
-```
-
-Le mot de passe ne doit jamais être enregistré directement dans Git.
-
----
-
-## 7. Variables d’environnement
-
-Le backend utilise des variables d’environnement pour les données sensibles.
-
-Dans le terminal qui servira à lancer le backend :
-
-```bash
-export DB_PASSWORD='votre_mot_de_passe_postgresql'
-export JWT_SECRET='votre_secret_jwt'
-```
-
-Ces variables doivent être redéfinies dans chaque nouveau terminal
-avant de démarrer le backend.
-
-Ne jamais enregistrer les valeurs réelles dans le repository Git.
-
----
-
-## 8. Configuration du backend
-
-La configuration principale se trouve dans :
-
-```text
-backend/src/main/resources/application.properties
-```
-
-Elle utilise notamment :
-
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/datashare
-spring.datasource.username=datashare
-spring.datasource.password=${DB_PASSWORD}
-
-jwt.secret=${JWT_SECRET}
-```
-
----
-
-## 9. Lancer le backend
-
-Depuis la racine du projet :
-
-```bash
-cd backend
-./mvnw spring-boot:run
-```
-
-Le backend est accessible sur :
-
-```text
-http://localhost:8080
-```
-
----
-
-## 10. Lancer le frontend
-
-Dans un second terminal :
-
-```bash
-cd ~/Projets/DataShare/frontend
-npm install
-npm start
-```
-
-Le frontend est accessible sur :
-
-```text
-http://localhost:4200
-```
-
----
-
-## 11. Utilisation de DataShare
-
-Une fois PostgreSQL, le backend et le frontend démarrés :
-
-1. ouvrir `http://localhost:4200` ;
-2. créer un compte ;
-3. se connecter ;
-4. sélectionner un fichier ;
-5. choisir sa durée d’expiration ;
-6. téléverser le fichier ;
-7. récupérer le lien de téléchargement ;
-8. consulter l’historique ;
-9. télécharger ou supprimer le fichier.
-
----
-
-## 12. API REST
-
-Le frontend communique avec le backend via une API REST utilisant JSON.
-
-La documentation détaillée des endpoints est disponible dans :
-
-```text
-API.md
-```
-
-Les principales fonctionnalités exposées concernent :
-
-- l’inscription ;
-- la connexion ;
-- l’upload ;
-- l’historique ;
-- le téléchargement ;
-- la suppression.
-
----
-
-## 13. Sécurité
-
-Plusieurs mécanismes ont été mis en place :
-
-- hachage des mots de passe ;
-- authentification JWT ;
-- contrôle des accès aux ressources protégées ;
-- vérification du propriétaire avant suppression ;
-- expiration des liens de téléchargement ;
-- limitation de la taille des fichiers ;
-- blocage des extensions `.exe` et `.bat` ;
-- stockage des secrets dans des variables d’environnement ;
-- analyse des dépendances frontend avec `npm audit`.
-
-La documentation détaillée est disponible dans :
-
-```text
-SECURITY.md
-```
-
----
-
-## 14. Accessibilité et ergonomie
-
-Plusieurs bonnes pratiques d’accessibilité ont été ajoutées au frontend :
-
-- labels associés aux champs de formulaire ;
-- texte alternatif sur le logo ;
-- boutons HTML explicites ;
-- attributs ARIA pour certains champs et messages ;
-- messages d’erreur annoncés aux technologies d’assistance ;
-- utilisation de `aria-invalid` et `aria-describedby` ;
-- utilisation de `role="alert"` et `aria-live` ;
-- autocomplétion adaptée aux champs d’authentification ;
-- interface responsive.
-
-Ces améliorations s’inscrivent dans les bonnes pratiques d’accessibilité
-issues notamment des recommandations WCAG et du référentiel RGAA.
-
----
-
-## 15. Tests
-
-Le projet utilise plusieurs niveaux de tests.
-
-### Tests unitaires
-
-Les tests unitaires vérifient notamment les règles métier du backend :
-
-- rejet des fichiers interdits ;
-- rejet d’un fichier vide ;
-- validation de la durée d’expiration ;
-- limite de taille ;
-- gestion des tokens invalides ;
-- gestion des tokens expirés ;
-- inscription ;
-- authentification.
-
-### Tests d’intégration
-
-Les tests d’intégration vérifient les interactions entre :
-
-- les contrôleurs ;
-- les services ;
-- PostgreSQL ;
-- le stockage des fichiers ;
-- Spring Security.
-
-### Test End-to-End
-
-Playwright vérifie un parcours utilisateur complet :
-
-```text
-Inscription
-    ->
-Connexion
-    ->
-Upload
-    ->
-Historique
-    ->
-Téléchargement
-    ->
-Suppression
-```
-
-Résultats validés pendant le développement :
-
-```text
-22 tests backend réussis
-1 test End-to-End Playwright réussi
-```
-
-Pour lancer les tests backend :
-
-```bash
-cd ~/Projets/DataShare/backend
-
-export DB_PASSWORD='votre_mot_de_passe_postgresql'
-export JWT_SECRET='votre_secret_jwt'
-
-./mvnw clean test
-```
-
-Le backend et le frontend doivent être démarrés avant l’exécution
-du scénario End-to-End.
-
-Pour lancer le test End-to-End :
-
-```bash
-cd ~/Projets/DataShare/frontend
-npx playwright test
-```
-
-La stratégie de tests est détaillée dans :
-
-```text
-TESTING.md
-```
-
----
-
-## 16. Couverture du code
-
-JaCoCo est utilisé pour mesurer la couverture du backend.
-
-Commande :
-
-```bash
-cd ~/Projets/DataShare/backend
-./mvnw clean test
-```
-
-Le rapport HTML est généré dans :
-
-```text
-backend/target/site/jacoco/index.html
-```
-
-Résultats obtenus lors de la validation :
-
-```text
-Couverture des instructions : 80 %
-Couverture des branches : 73 %
-```
-
----
-
-## 17. Analyse des dépendances
-
-Le frontend peut être analysé avec :
-
-```bash
-cd ~/Projets/DataShare/frontend
-npm audit
-```
-
-Pour analyser uniquement les dépendances utilisées en production :
-
-```bash
-npm audit --omit=dev
-```
-
-Une mise à jour majeure forcée n’est pas appliquée automatiquement
-lorsqu’elle risque d’introduire des incompatibilités.
-
-Les résultats et décisions sont documentés dans :
-
-```text
-SECURITY.md
-```
-
----
-
-## 18. Performance
-
-Les performances de DataShare ont été mesurées côté backend et côté frontend.
-
-### Backend
-
-Un test de charge a été réalisé avec k6 sur le téléchargement d’un fichier.
-
-Le script se trouve dans :
+Le scénario est disponible dans :
 
 ```text
 performance/download-test.js
 ```
 
-Scénario utilisé :
+---
+
+## Endpoint testé
+
+Le test porte sur le téléchargement d'un fichier à partir de son token.
+
+Le parcours correspond à l'endpoint :
+
+```http
+GET /api/download/{token}/file
+```
+
+Le téléchargement a été retenu car il s'agit d'une fonctionnalité importante de DataShare et qu'elle sollicite à la fois :
+
+- l'API Spring Boot ;
+- la logique métier ;
+- l'accès aux métadonnées ;
+- le stockage physique du fichier.
+
+---
+
+## Configuration du test
+
+Le scénario a été exécuté avec :
 
 ```text
 10 utilisateurs virtuels
-durée : 20 secondes
+Durée : 20 secondes
 ```
 
-Résultats observés :
+Les seuils définis dans le scénario permettent notamment de surveiller :
+
+- le taux d'erreur ;
+- le temps de réponse HTTP.
+
+Les objectifs principaux étaient :
 
 ```text
-171 362 requêtes HTTP
-0 % d’erreur
-temps moyen : 1,08 ms
-p95 : 1,37 ms
-environ 8 568 requêtes par seconde
+Taux d'erreur < 1 %
+p95 < 1000 ms
 ```
 
-Ces mesures ont été réalisées dans un environnement local de développement
-et ne constituent pas un benchmark de production.
+---
 
-### Frontend
+## Résultats k6
 
-Un build Angular de production a également été analysé.
+Résultats obtenus lors de la validation :
 
-Commande :
+```text
+Requêtes HTTP : 171 362
+Erreurs : 0
+Taux d'erreur : 0 %
+
+Temps moyen : 1,08 ms
+Médiane : 1,06 ms
+Maximum : 5,21 ms
+
+p90 : 1,27 ms
+p95 : 1,37 ms
+
+Débit : environ 8 568 requêtes / seconde
+Données reçues : environ 88 Mo
+```
+
+Les checks définis dans le scénario ont réussi.
+
+---
+
+## Interprétation
+
+Les résultats montrent que, dans cet environnement local et avec le fichier utilisé
+pour le scénario de test, l'endpoint de téléchargement reste stable pendant la
+charge appliquée.
+
+Le taux d'erreur observé est :
+
+```text
+0 %
+```
+
+Le p95 observé est :
+
+```text
+1,37 ms
+```
+
+Il reste donc largement inférieur au seuil défini de :
+
+```text
+1000 ms
+```
+
+Ces chiffres ne doivent cependant pas être interprétés comme les performances
+attendues d'une infrastructure de production.
+
+Le test a été réalisé :
+
+- sur une machine locale ;
+- sans latence réseau réelle ;
+- sans infrastructure distribuée ;
+- avec un nombre limité d'utilisateurs virtuels ;
+- avec un fichier de test de petite taille.
+
+Le résultat sert principalement de référence de non-régression.
+
+---
+
+# 2. Performance frontend
+
+## Build de production
+
+Le frontend Angular est compilé en mode production avec :
 
 ```bash
 cd ~/Projets/DataShare/frontend
 npm run build
 ```
 
-Résultats du bundle initial :
+Résultat observé :
 
 ```text
-Taille brute : 329,72 kB
-Transfert estimé : 87,54 kB
+Initial chunk files   | Names         | Raw size  | Estimated transfer size
+main-XWRLC2ML.js      | main          | 294.10 kB | 75.92 kB
+polyfills-5CFQRCPP.js | polyfills     | 34.59 kB  | 11.33 kB
+styles-ASBQMRW5.css   | styles        | 1.04 kB   | 286 bytes
+
+Initial total                        | 329.72 kB | 87.54 kB
 ```
 
-Une mesure Lighthouse a été réalisée sur le build de production.
+Le build a été généré dans :
 
-Résultats :
+```text
+frontend/dist/frontend
+```
+
+---
+
+## Interprétation du bundle
+
+Le bundle initial représente environ :
+
+```text
+329,72 kB
+```
+
+avec un transfert estimé à :
+
+```text
+87,54 kB
+```
+
+Cette mesure permet de suivre l'évolution du poids du frontend.
+
+Une augmentation importante de ce chiffre lors d'une évolution future devra être
+analysée afin d'éviter une dégradation progressive du temps de chargement.
+
+---
+
+# 3. Lighthouse - mesure initiale
+
+Le build de production a été servi localement sur :
+
+```text
+http://localhost:4173
+```
+
+La mesure Lighthouse initiale a donné :
 
 ```text
 Performance : 82 / 100
+
 FCP : 2,6 s
 LCP : 4,2 s
 TBT : 0 ms
@@ -555,175 +216,432 @@ CLS : 0
 Speed Index : 2,6 s
 ```
 
-Le LCP constitue le principal axe d’amélioration identifié.
+---
 
-Les résultats détaillés, les budgets de performance et les limites
-des mesures sont documentés dans :
+## Analyse initiale
+
+Les résultats étaient globalement corrects pour le MVP.
+
+Les points positifs étaient :
 
 ```text
-PERF.md
+TBT : 0 ms
+CLS : 0
+```
+
+Cela signifie notamment que le navigateur ne présentait pas de blocage JavaScript
+important ni de déplacement significatif de la mise en page pendant le chargement.
+
+Le principal axe d'amélioration identifié était :
+
+```text
+LCP : 4,2 s
+```
+
+Le Largest Contentful Paint était donc le premier indicateur à surveiller.
+
+---
+
+# 4. Recherche d'une optimisation
+
+Une analyse des ressources du frontend a permis d'identifier le logo principal :
+
+```text
+frontend/public/assets/datashare-logo.png.png
+```
+
+Avant optimisation, ses caractéristiques étaient :
+
+```text
+Dimensions : 781 x 569 px
+Poids : 308 Ko
+Format : PNG RGBA
+```
+
+Dans l'interface, ce logo est affiché au maximum à environ :
+
+```text
+125 x 125 px
+```
+
+et sur une taille d'écran plus petite :
+
+```text
+100 x 100 px
+```
+
+Le fichier source était donc beaucoup plus grand que nécessaire par rapport à sa
+taille réelle d'affichage.
+
+---
+
+# 5. Optimisation du logo
+
+Le logo a été redimensionné en conservant :
+
+- son format PNG ;
+- ses proportions ;
+- sa transparence ;
+- son apparence dans l'interface ;
+- son nom de fichier ;
+- son emplacement dans le projet.
+
+Après optimisation :
+
+```text
+Dimensions : 250 x 182 px
+Poids : 34 Ko
+```
+
+Le poids du fichier est passé de :
+
+```text
+308 Ko
+```
+
+à :
+
+```text
+34 Ko
+```
+
+soit une réduction d'environ :
+
+```text
+89 %
+```
+
+Le HTML et les styles de l'application n'ont pas été modifiés pour cette
+optimisation.
+
+Le logo reste référencé par :
+
+```html
+<img
+    src="/assets/datashare-logo.png.png"
+    alt="Logo DataShare"
+    class="brand-logo"
+>
+```
+
+L'interface a ensuite été contrôlée visuellement afin de vérifier l'absence de
+régression.
+
+Aucune différence visuelle gênante n'a été constatée.
+
+---
+
+# 6. Lighthouse après optimisation
+
+Après l'optimisation, le frontend a été reconstruit avec :
+
+```bash
+cd ~/Projets/DataShare/frontend
+npm run build
+```
+
+Le build de production a ensuite été servi localement sur le port :
+
+```text
+4173
+```
+
+Une nouvelle mesure Lighthouse a été réalisée dans les mêmes conditions générales.
+
+Résultats :
+
+```text
+Performance : 91 / 100
+FCP : 2,6 s
+LCP : 3,0 s
+TBT : 0 ms
+CLS : 0
 ```
 
 ---
 
-## 19. Logs structurés
+# 7. Comparaison avant / après
 
-Le backend produit des logs structurés au format JSON.
+| Indicateur | Avant | Après | Évolution |
+|---|---:|---:|---:|
+| Poids du logo | 308 Ko | 34 Ko | environ -89 % |
+| Score Lighthouse | 82 / 100 | 91 / 100 | +9 points |
+| FCP | 2,6 s | 2,6 s | stable |
+| LCP | 4,2 s | 3,0 s | -1,2 s |
+| TBT | 0 ms | 0 ms | stable |
+| CLS | 0 | 0 | stable |
 
-Le fichier de logs est :
+Le LCP est passé de :
 
 ```text
-backend/logs/datashare.log
+4,2 s
 ```
 
-Les principaux événements métier journalisés sont :
+à :
 
 ```text
-file_upload
-file_download
-file_delete
+3,0 s
 ```
 
-Les logs permettent notamment de suivre :
-
-- le type d’opération ;
-- l’identifiant du fichier ;
-- la taille du fichier ;
-- certaines informations utiles au diagnostic.
-
-Les mots de passe, JWT et tokens de téléchargement ne doivent pas être
-écrits dans les logs.
-
----
-
-## 20. Maintenance
-
-Les procédures de maintenance sont décrites dans :
+soit une amélioration d'environ :
 
 ```text
-MAINTENANCE.md
-```
-
-Elles couvrent notamment :
-
-- le diagnostic d’incidents ;
-- l’analyse des logs ;
-- la correction d’un bug ;
-- les tests de non-régression ;
-- les mises à jour des dépendances ;
-- les contrôles de sécurité ;
-- les tests de performance ;
-- la maintenance de PostgreSQL ;
-- le stockage local des fichiers ;
-- le processus Git.
-
----
-
-## 21. Utilisation de l’intelligence artificielle
-
-L’intelligence artificielle a été utilisée comme outil d’assistance
-au développement et à l’apprentissage.
-
-Son utilisation est documentée dans :
-
-```text
-AI_USAGE.md
-```
-
-Une revue technique spécifique du code développé avec l’assistance
-de l’IA est disponible dans :
-
-```text
-AI_REVIEW.md
-```
-
-Le code proposé avec l’aide de l’IA n’a pas été accepté automatiquement.
-
-Il a été :
-
-- relu ;
-- testé ;
-- comparé aux besoins fonctionnels ;
-- corrigé lorsque nécessaire.
-
-Une anomalie concernant la gestion d’un type MIME invalide pendant
-le téléchargement a notamment été détectée lors de cette revue puis corrigée.
-
----
-
-## 22. Documentation du projet
-
-Les principaux documents du repository sont :
-
-```text
-README.md
-API.md
-AI_USAGE.md
-AI_REVIEW.md
-TESTING.md
-SECURITY.md
-PERF.md
-MAINTENANCE.md
-```
-
-Ils couvrent notamment :
-
-- l’installation ;
-- l’utilisation ;
-- l’architecture ;
-- l’API ;
-- les tests ;
-- la sécurité ;
-- les performances ;
-- la maintenance ;
-- l’utilisation de l’IA.
-
----
-
-## 23. Structure simplifiée du repository
-
-```text
-DataShare/
-|
-|-- backend/
-|   |-- src/
-|   |-- pom.xml
-|   `-- mvnw
-|
-|-- frontend/
-|   |-- src/
-|   |-- e2e/
-|   |-- public/
-|   |-- package.json
-|   `-- playwright.config.ts
-|
-|-- performance/
-|   `-- download-test.js
-|
-|-- API.md
-|-- AI_USAGE.md
-|-- AI_REVIEW.md
-|-- TESTING.md
-|-- SECURITY.md
-|-- PERF.md
-|-- MAINTENANCE.md
-`-- README.md
+29 %
 ```
 
 ---
 
-## 24. Repository GitHub
+## Interprétation
 
-Le code source du projet est disponible sur :
+L'optimisation du logo constitue une amélioration réelle et mesurable du frontend.
+
+Le poids de la ressource a été réduit d'environ 89 % sans modifier visiblement
+l'interface.
+
+La deuxième mesure Lighthouse montre également :
+
+- une amélioration du score Performance ;
+- une réduction du LCP ;
+- un FCP stable ;
+- aucun temps de blocage supplémentaire ;
+- aucun déplacement de mise en page.
+
+Il n'est cependant pas possible d'affirmer que la totalité de l'amélioration
+Lighthouse provient uniquement du logo.
+
+Les mesures Lighthouse peuvent légèrement varier d'une exécution à une autre.
+
+La réduction du poids du fichier constitue néanmoins une optimisation technique
+objective et indépendante du score Lighthouse.
+
+---
+
+# 8. Budget de performance frontend
+
+Pour limiter les régressions futures, les valeurs suivantes servent de références.
+
+## Bundle Angular
+
+Référence actuelle :
 
 ```text
-https://github.com/AbdouMESSABIH/DataShare
+Initial total : 329,72 kB
+Transfert estimé : 87,54 kB
+```
+
+Objectif :
+
+- surveiller toute augmentation importante du bundle ;
+- analyser les nouvelles dépendances avant leur ajout ;
+- éviter l'ajout de bibliothèques lourdes sans justification.
+
+---
+
+## Lighthouse
+
+Référence actuelle après optimisation :
+
+```text
+Performance : 91 / 100
+FCP : 2,6 s
+LCP : 3,0 s
+TBT : 0 ms
+CLS : 0
+```
+
+Objectifs de suivi :
+
+- maintenir un score Performance proche ou supérieur à 90 lorsque possible ;
+- conserver un TBT faible ;
+- conserver un CLS proche de 0 ;
+- surveiller le LCP ;
+- éviter une augmentation inutile du poids des ressources.
+
+Ces valeurs constituent un budget de référence pour le MVP et non un engagement
+de performance de production.
+
+---
+
+# 9. Budget de performance backend
+
+Pour le scénario k6 actuel, les seuils définis sont :
+
+```text
+Taux d'erreur < 1 %
+p95 < 1000 ms
+```
+
+Résultat de référence :
+
+```text
+Taux d'erreur : 0 %
+p95 : 1,37 ms
+```
+
+Une évolution future du backend peut être comparée à ces résultats pour détecter
+une régression.
+
+---
+
+# 10. Pistes d'amélioration futures
+
+Pour une évolution vers un environnement de production, plusieurs optimisations
+pourraient être étudiées.
+
+## Frontend
+
+- continuer à réduire le LCP ;
+- surveiller le poids des bundles ;
+- utiliser le lazy loading lorsque pertinent ;
+- optimiser les images et autres ressources statiques ;
+- analyser les nouvelles dépendances avant leur ajout ;
+- vérifier régulièrement Lighthouse après les évolutions importantes.
+
+## Backend
+
+- tester avec plusieurs tailles de fichiers ;
+- augmenter progressivement le nombre d'utilisateurs virtuels ;
+- exécuter les tests sur une infrastructure séparée ;
+- mesurer la consommation CPU et mémoire ;
+- analyser les performances PostgreSQL ;
+- surveiller les temps d'accès au stockage.
+
+## Infrastructure
+
+Pour une mise en production :
+
+- utiliser un stockage objet comme AWS S3 ou équivalent ;
+- ajouter HTTPS ;
+- utiliser un reverse proxy ;
+- ajouter une supervision ;
+- centraliser les métriques ;
+- ajouter une chaîne CI/CD ;
+- effectuer des tests de charge dans un environnement proche de la production.
+
+---
+
+# 11. Régénérer les mesures
+
+## Build frontend
+
+```bash
+cd ~/Projets/DataShare/frontend
+npm run build
 ```
 
 ---
 
-## 25. Auteur
+## Servir le build de production
 
-Projet réalisé dans le cadre de la formation :
+```bash
+cd ~/Projets/DataShare/frontend
 
-**Expert DevOps - OpenClassrooms**
+python3 -m http.server 4173 -d dist/frontend/browser
+```
+
+L'application est alors accessible sur :
+
+```text
+http://localhost:4173
+```
+
+---
+
+## Lighthouse
+
+Exemple de génération d'un rapport JSON :
+
+```bash
+cd ~/Projets/DataShare/frontend
+
+npx lighthouse http://localhost:4173 \
+  --only-categories=performance \
+  --output=json \
+  --output-path=lighthouse-after.json \
+  --chrome-flags="--headless=new"
+```
+
+Les résultats principaux peuvent être lus avec :
+
+```bash
+node -e "
+const r=require('./lighthouse-after.json');
+console.log('Performance :', Math.round(r.categories.performance.score*100));
+console.log('FCP :', r.audits['first-contentful-paint'].displayValue);
+console.log('LCP :', r.audits['largest-contentful-paint'].displayValue);
+console.log('TBT :', r.audits['total-blocking-time'].displayValue);
+console.log('CLS :', r.audits['cumulative-layout-shift'].displayValue);
+"
+```
+
+Les rapports Lighthouse générés localement sont des fichiers temporaires et ne sont
+pas destinés à être versionnés dans Git.
+
+---
+
+## Test k6
+
+Le scénario backend est disponible dans :
+
+```text
+performance/download-test.js
+```
+
+Avant le test, le backend doit être démarré et le scénario doit utiliser un token
+de téléchargement valide.
+
+La commande d'exécution est :
+
+```bash
+k6 run performance/download-test.js
+```
+
+---
+
+# 12. Bilan
+
+La validation des performances de DataShare repose sur plusieurs mesures
+complémentaires :
+
+```text
+Backend
+  ↓
+k6
+  ↓
+temps de réponse / erreurs / débit
+
+Frontend
+  ↓
+build Angular
+  ↓
+poids du bundle
+
+Frontend
+  ↓
+Lighthouse
+  ↓
+FCP / LCP / TBT / CLS
+
+Optimisation
+  ↓
+mesure avant
+  ↓
+réduction du poids du logo
+  ↓
+mesure après
+```
+
+La campagne de performance a permis :
+
+- de vérifier la stabilité locale du téléchargement sous charge ;
+- de mesurer le poids du frontend ;
+- d'identifier le LCP comme axe d'amélioration ;
+- d'optimiser une ressource frontend réellement surdimensionnée ;
+- de réduire le poids du logo d'environ 89 % ;
+- d'améliorer le score Lighthouse de 82 à 91 ;
+- de réduire le LCP de 4,2 s à 3,0 s ;
+- de définir des références permettant de détecter de futures régressions.
+
+Les résultats restent liés à l'environnement local et doivent être complétés par
+des mesures sur une infrastructure réelle avant toute conclusion concernant les
+performances de production.
