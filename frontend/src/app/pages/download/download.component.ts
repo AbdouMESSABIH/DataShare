@@ -7,10 +7,16 @@ import {
   FileService
 } from '../../services/file.service';
 
+import {
+  formatFileSize
+} from '../../utils/file-size.util';
+
 
 @Component({
   selector: 'app-download',
-  imports: [CommonModule],
+  imports: [
+    CommonModule
+  ],
   templateUrl: './download.component.html',
   styleUrl: './download.component.scss'
 })
@@ -21,6 +27,8 @@ export class DownloadComponent implements OnInit {
   downloadUrl = '';
 
   errorMessage = '';
+
+  readonly formatFileSize = formatFileSize;
 
 
   constructor(
@@ -57,6 +65,7 @@ export class DownloadComponent implements OnInit {
 
           this.fileInfo = response;
         },
+
 
         error: (error) => {
 

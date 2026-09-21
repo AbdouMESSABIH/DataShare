@@ -27,7 +27,7 @@
 
         <p id="file-help">
           Taille maximale : 1 Go.
-          Les fichiers .exe et .bat ne sont pas autorisés.
+          Les types de fichiers autorisés sont contrôlés par l'application.
         </p>
 
       </div>
@@ -93,8 +93,6 @@
     <div
       class="result"
       *ngIf="uploadResult"
-      role="status"
-      aria-live="polite"
       aria-labelledby="upload-result-title"
     >
 
@@ -102,28 +100,56 @@
         Fichier partagé
       </h2>
 
+
       <p>
         <strong>Nom :</strong>
         {{ uploadResult.originalName }}
       </p>
 
+
       <p>
         <strong>Taille :</strong>
-        {{ uploadResult.size }} octets
+        {{ formatFileSize(uploadResult.size) }}
       </p>
+
 
       <p>
         <strong>Expiration :</strong>
-        {{ uploadResult.expiresAt | date:'yyyy-MM-dd HH:mm' }}
+        {{ uploadResult.expiresAt | date:'dd/MM/yyyy HH:mm' }}
       </p>
+
 
       <p>
-        <strong>Token de téléchargement :</strong>
+        <strong>Lien de partage :</strong>
       </p>
 
-      <code>
-        {{ uploadResult.downloadToken }}
-      </code>
+
+      <a
+        [href]="getShareUrl(uploadResult.downloadToken)"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {{ getShareUrl(uploadResult.downloadToken) }}
+      </a>
+
+
+      <p>
+        <button
+          type="button"
+          (click)="copyShareLink(uploadResult.downloadToken)"
+        >
+          Copier le lien
+        </button>
+      </p>
+
+
+      <p
+        *ngIf="copyMessage"
+        role="status"
+        aria-live="polite"
+      >
+        {{ copyMessage }}
+      </p>
 
     </div>
 

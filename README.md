@@ -29,7 +29,8 @@ DataShare permet notamment :
 Contraintes principales :
 
 - taille maximale d’un fichier : **1 Go** ;
-- les fichiers `.exe` et `.bat` sont refusés ;
+- seuls les formats TXT, PDF, PNG, JPG et JPEG sont autorisés ;
+- le contenu réel du fichier est vérifié et doit correspondre au type attendu ;
 - les liens expirés ne permettent plus le téléchargement.
 
 ---
@@ -104,10 +105,12 @@ Responsabilités principales :
 ### Qualité, sécurité et performance
 
 - JaCoCo
+- ESLint
+- SpotBugs
 - Playwright
 - npm audit
 - k6
-- Lighthouse
+- Flyway
 - logs structurés JSON
 
 ---
@@ -121,13 +124,16 @@ Les outils suivants sont nécessaires :
 - Node.js
 - npm
 - PostgreSQL
-- Python 3
 
-Sous Fedora, ils peuvent être installés manuellement avec :
+Sous Fedora, le script `scripts/install-fedora.sh` peut être utilisé.
+
+Une alternative multi-distribution est disponible avec :
 
 ```bash
-sudo dnf install git java-21-openjdk-devel nodejs npm postgresql-server postgresql-contrib python3
+./scripts/install-linux.sh
 ```
+
+Elle prend en charge Fedora (`dnf`) ainsi que Debian/Ubuntu (`apt`). Voir `PORTABILITY.md`.
 
 Vérification :
 
@@ -137,11 +143,7 @@ node --version
 npm --version
 psql --version
 git --version
-python3 --version
 ```
-
-Le repository contient également un script permettant d’automatiser
-l’installation de ces dépendances sous Fedora.
 
 ---
 
@@ -154,74 +156,9 @@ git clone https://github.com/AbdouMESSABIH/DataShare.git
 cd DataShare
 ```
 
-### Scripts d’installation
-
-Le repository contient deux scripts permettant de préparer l’environnement
-de développement sous Fedora.
-
-Les scripts sont situés dans :
-
-```text
-scripts/
-```
-
-### Installation des dépendances système
-
-Le script suivant installe les principaux outils nécessaires sous Fedora
-et prépare le service PostgreSQL :
-
-```bash
-./scripts/install-fedora.sh
-```
-
-Il installe notamment :
-
-- Git ;
-- Java 21 ;
-- Node.js et npm ;
-- PostgreSQL ;
-- Python 3.
-
-Le script vérifie également l’initialisation de PostgreSQL puis active
-le service avec `systemd`.
-
-Ce script est spécifique à Fedora.
-
-### Configuration de la base PostgreSQL
-
-Avant d’exécuter le script de configuration de la base, définir le mot
-de passe PostgreSQL utilisé par DataShare :
-
-```bash
-export DB_PASSWORD='votre_mot_de_passe_postgresql'
-```
-
-Ne jamais enregistrer la valeur réelle de ce mot de passe dans Git.
-
-Puis exécuter :
-
-```bash
-./scripts/setup-db.sh
-```
-
-Ce script :
-
-- vérifie que PostgreSQL est disponible ;
-- démarre PostgreSQL si nécessaire ;
-- crée l’utilisateur `datashare` s’il n’existe pas ;
-- configure son mot de passe avec `DB_PASSWORD` ;
-- crée la base `datashare` si elle n’existe pas ;
-- attribue la base à l’utilisateur `datashare`.
-
-Le script peut être relancé sur une installation existante sans recréer
-la base si elle est déjà présente.
-
 ---
 
-## 6. Configuration manuelle de PostgreSQL
-
-Cette section décrit la procédure manuelle équivalente au script
-`scripts/setup-db.sh`.
+## 6. Configuration de PostgreSQL
 
 Initialiser PostgreSQL si nécessaire :
 
@@ -287,9 +224,6 @@ export DB_PASSWORD='votre_mot_de_passe_postgresql'
 export JWT_SECRET='votre_secret_jwt'
 ```
 
-`DB_PASSWORD` doit correspondre au mot de passe configuré pour
-l’utilisateur PostgreSQL `datashare`.
-
 Ces variables doivent être redéfinies dans chaque nouveau terminal
 avant de démarrer le backend.
 
@@ -313,6 +247,13 @@ spring.datasource.username=datashare
 spring.datasource.password=${DB_PASSWORD}
 
 jwt.secret=${JWT_SECRET}
+```
+
+Le schéma PostgreSQL est versionné avec Flyway. Hibernate vérifie le schéma sans le modifier automatiquement :
+
+```properties
+spring.flyway.enabled=true
+spring.jpa.hibernate.ddl-auto=validate
 ```
 
 ---
@@ -387,20 +328,6 @@ Les principales fonctionnalités exposées concernent :
 - le téléchargement ;
 - la suppression.
 
-Les routes principales sont :
-
-```text
-POST   /api/auth/register
-POST   /api/auth/login
-
-POST   /api/files/upload
-GET    /api/files
-DELETE /api/files/{id}
-
-GET    /api/download/{token}
-GET    /api/download/{token}/file
-```
-
 ---
 
 ## 13. Sécurité
@@ -412,9 +339,12 @@ Plusieurs mécanismes ont été mis en place :
 - contrôle des accès aux ressources protégées ;
 - vérification du propriétaire avant suppression ;
 - expiration des liens de téléchargement ;
-- limitation de la taille des fichiers ;
-- blocage des extensions `.exe` et `.bat` ;
+- limitation de la taille des fichiers à 1 Go ;
+- whitelist TXT, PDF, PNG, JPG et JPEG ;
+- vérification du contenu réel et de la cohérence extension/contenu ;
+- rate limiting sur la connexion et l'upload ;
 - stockage des secrets dans des variables d’environnement ;
+- analyse statique avec ESLint et SpotBugs ;
 - analyse des dépendances frontend avec `npm audit`.
 
 La documentation détaillée est disponible dans :
@@ -441,9 +371,6 @@ Plusieurs bonnes pratiques d’accessibilité ont été ajoutées au frontend :
 
 Ces améliorations s’inscrivent dans les bonnes pratiques d’accessibilité
 issues notamment des recommandations WCAG et du référentiel RGAA.
-
-Elles ne constituent pas à elles seules une certification complète
-de conformité WCAG ou RGAA.
 
 ---
 
@@ -495,8 +422,9 @@ Suppression
 Résultats validés pendant le développement :
 
 ```text
-22 tests backend réussis
-1 test End-to-End Playwright réussi
+32 tests backend réussis
+22 tests Angular réussis
+3 tests End-to-End Playwright réussis
 ```
 
 Pour lancer les tests backend :
@@ -509,9 +437,6 @@ export JWT_SECRET='votre_secret_jwt'
 
 ./mvnw clean test
 ```
-
-Le backend et le frontend doivent être démarrés avant l’exécution
-du scénario End-to-End.
 
 Pour lancer le test End-to-End :
 
@@ -582,11 +507,8 @@ SECURITY.md
 
 ## 18. Performance
 
-Les performances de DataShare ont été mesurées côté backend et côté frontend.
-
-### Backend
-
-Un test de charge a été réalisé avec k6 sur le téléchargement d’un fichier.
+Un test de charge du backend a été réalisé avec k6 sur le téléchargement
+d’un fichier.
 
 Le script se trouve dans :
 
@@ -604,51 +526,23 @@ durée : 20 secondes
 Résultats observés :
 
 ```text
-171 362 requêtes HTTP
+161 545 requêtes HTTP
 0 % d’erreur
-temps moyen : 1,08 ms
-p95 : 1,37 ms
-environ 8 568 requêtes par seconde
+p95 : 1,44 ms
+environ 8 076,9 requêtes par seconde
+
+Lighthouse après optimisation :
+Performance 91/100
+FCP 2,6 s
+LCP 3,0 s
+TBT 0 ms
+CLS 0
 ```
 
 Ces mesures ont été réalisées dans un environnement local de développement
 et ne constituent pas un benchmark de production.
 
-### Frontend
-
-Un build Angular de production a également été analysé.
-
-Commande :
-
-```bash
-cd ~/Projets/DataShare/frontend
-npm run build
-```
-
-Résultats du bundle initial :
-
-```text
-Taille brute : 329,72 kB
-Transfert estimé : 87,54 kB
-```
-
-Une mesure Lighthouse a été réalisée sur le build de production.
-
-Résultats :
-
-```text
-Performance : 82 / 100
-FCP : 2,6 s
-LCP : 4,2 s
-TBT : 0 ms
-CLS : 0
-Speed Index : 2,6 s
-```
-
-Le LCP constitue le principal axe d’amélioration identifié.
-
-Les résultats détaillés, les budgets de performance et les limites
-des mesures sont documentés dans :
+Les résultats et leur analyse sont disponibles dans :
 
 ```text
 PERF.md
@@ -701,8 +595,6 @@ Elles couvrent notamment :
 - la correction d’un bug ;
 - les tests de non-régression ;
 - les mises à jour des dépendances ;
-- la fréquence de contrôle des dépendances ;
-- les risques liés aux mises à jour majeures ;
 - les contrôles de sécurité ;
 - les tests de performance ;
 - la maintenance de PostgreSQL ;
@@ -756,6 +648,8 @@ TESTING.md
 SECURITY.md
 PERF.md
 MAINTENANCE.md
+PORTABILITY.md
+PERSONAL_DATA.md
 ```
 
 Ils couvrent notamment :
@@ -772,58 +666,7 @@ Ils couvrent notamment :
 
 ---
 
-## 23. Scripts du projet
-
-Les scripts de préparation de l’environnement sont regroupés dans :
-
-```text
-scripts/
-```
-
-### `install-fedora.sh`
-
-Objectif :
-
-- installer les dépendances nécessaires sous Fedora ;
-- vérifier l’initialisation de PostgreSQL ;
-- activer et démarrer PostgreSQL ;
-- afficher les versions des principaux outils.
-
-Exécution :
-
-```bash
-./scripts/install-fedora.sh
-```
-
-### `setup-db.sh`
-
-Objectif :
-
-- créer ou vérifier l’utilisateur PostgreSQL `datashare` ;
-- configurer son mot de passe depuis `DB_PASSWORD` ;
-- créer ou vérifier la base `datashare`.
-
-Exécution :
-
-```bash
-export DB_PASSWORD='votre_mot_de_passe_postgresql'
-./scripts/setup-db.sh
-```
-
-La syntaxe Bash des deux scripts a été vérifiée avec :
-
-```bash
-bash -n scripts/install-fedora.sh
-bash -n scripts/setup-db.sh
-```
-
-Le script `setup-db.sh` a également été exécuté sur l’environnement de
-développement et la connexion PostgreSQL avec l’utilisateur `datashare`
-a été vérifiée.
-
----
-
-## 24. Structure simplifiée du repository
+## 23. Structure simplifiée du repository
 
 ```text
 DataShare/
@@ -843,10 +686,6 @@ DataShare/
 |-- performance/
 |   `-- download-test.js
 |
-|-- scripts/
-|   |-- install-fedora.sh
-|   `-- setup-db.sh
-|
 |-- API.md
 |-- AI_USAGE.md
 |-- AI_REVIEW.md
@@ -854,12 +693,14 @@ DataShare/
 |-- SECURITY.md
 |-- PERF.md
 |-- MAINTENANCE.md
+|-- PORTABILITY.md
+|-- PERSONAL_DATA.md
 `-- README.md
 ```
 
 ---
 
-## 25. Repository GitHub
+## 24. Repository GitHub
 
 Le code source du projet est disponible sur :
 
@@ -869,7 +710,7 @@ https://github.com/AbdouMESSABIH/DataShare
 
 ---
 
-## 26. Auteur
+## 25. Auteur
 
 Projet réalisé dans le cadre de la formation :
 

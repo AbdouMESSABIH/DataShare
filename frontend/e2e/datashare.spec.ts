@@ -124,7 +124,6 @@ test('parcours complet DataShare', async ({ page }) => {
         });
 
 
-
     const uploadResponsePromise =
         page.waitForResponse(
             response =>
@@ -254,3 +253,157 @@ test('parcours complet DataShare', async ({ page }) => {
         page.getByText('Aucun fichier pour le moment.')
     ).toBeVisible();
 });
+
+
+test(
+    'refuse la connexion avec un mauvais mot de passe',
+    async ({ page }) => {
+
+        const email =
+            `e2e-error-${Date.now()}@test.com`;
+
+        const password =
+            'Password123';
+
+
+        // ----------------------------------------
+        // Création préalable d'un compte valide
+        // ----------------------------------------
+
+        await page.goto('/register');
+
+        await page
+            .locator('input[type="email"]')
+            .fill(email);
+
+        const registerPasswordInputs =
+            page.locator('input[type="password"]');
+
+        for (
+            let i = 0;
+            i < await registerPasswordInputs.count();
+            i++
+        ) {
+
+            await registerPasswordInputs
+                .nth(i)
+                .fill(password);
+        }
+
+
+        const registerResponsePromise =
+            page.waitForResponse(
+                response =>
+                    response.url().includes('/api/auth/register')
+                    && response.request().method() === 'POST'
+            );
+
+
+        await page
+            .locator('button[type="submit"]')
+            .click();
+
+
+        const registerResponse =
+            await registerResponsePromise;
+
+
+        expect(
+            registerResponse.status()
+        ).toBe(201);
+
+
+        // ----------------------------------------
+        // Tentative avec mauvais mot de passe
+        // ----------------------------------------
+
+        await page.goto('/login');
+
+        await page
+            .locator('input[type="email"]')
+            .fill(email);
+
+        await page
+            .locator('input[type="password"]')
+            .fill('MauvaisMotDePasse123');
+
+
+        const loginResponsePromise =
+            page.waitForResponse(
+                response =>
+                    response.url().includes('/api/auth/login')
+                    && response.request().method() === 'POST'
+            );
+
+
+        await page
+            .locator('button[type="submit"]')
+            .click();
+
+
+        const loginResponse =
+            await loginResponsePromise;
+
+
+        expect(
+            loginResponse.status()
+        ).toBe(401);
+
+
+        await expect(
+            page.getByText(
+                'Email ou mot de passe incorrect'
+            )
+        ).toBeVisible();
+
+
+        const token =
+            await page.evaluate(
+                () => localStorage.getItem('token')
+            );
+
+
+        expect(token).toBeNull();
+    }
+);
+
+
+test(
+    'affiche une erreur pour un lien de téléchargement invalide',
+    async ({ page }) => {
+
+        const invalidToken =
+            `token-invalide-${Date.now()}`;
+
+
+        const responsePromise =
+            page.waitForResponse(
+                response =>
+                    response.url().includes(
+                        `/api/download/${invalidToken}`
+                    )
+                    && response.request().method() === 'GET'
+            );
+
+
+        await page.goto(
+            `/download/${invalidToken}`
+        );
+
+
+        const response =
+            await responsePromise;
+
+
+        expect(
+            response.status()
+        ).toBe(404);
+
+
+        await expect(
+            page.getByText(
+                'Lien de téléchargement invalide'
+            )
+        ).toBeVisible();
+    }
+);

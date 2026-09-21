@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+
+    <!--
+        Spring utilise volontairement l'injection par constructeur.
+        Les références ci-dessous sont des beans gérés par le conteneur Spring.
+        EI_EXPOSE_REP2 est donc un faux positif dans ce contexte.
+    -->
+
+    <Match>
+        <Class name="com.datashare.backend.controller.DownloadController"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <Match>
+        <Class name="com.datashare.backend.controller.FileController"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <Match>
+        <Class name="com.datashare.backend.security.SecurityConfig"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+</FindBugsFilter>

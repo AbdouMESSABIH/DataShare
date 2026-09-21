@@ -2,11 +2,20 @@
 
   <div class="download-card">
 
-    <h1>Télécharger un fichier</h1>
+    <h1>
+      Télécharger un fichier
+    </h1>
 
-    <p class="error" *ngIf="errorMessage">
+
+    <p
+      class="error"
+      *ngIf="errorMessage"
+      role="alert"
+      aria-live="assertive"
+    >
       {{ errorMessage }}
     </p>
+
 
     <div *ngIf="fileInfo">
 
@@ -15,20 +24,24 @@
         {{ fileInfo.originalName }}
       </p>
 
+
       <p>
         <strong>Taille :</strong>
-        {{ fileInfo.size }} octets
+        {{ formatFileSize(fileInfo.size) }}
       </p>
+
 
       <p>
         <strong>Type :</strong>
         {{ fileInfo.contentType }}
       </p>
 
+
       <p>
         <strong>Expiration :</strong>
-        {{ fileInfo.expiresAt | date:'yyyy-MM-dd HH:mm' }}
+        {{ fileInfo.expiresAt | date:'dd/MM/yyyy HH:mm' }}
       </p>
+
 
       <a
         class="download-button"

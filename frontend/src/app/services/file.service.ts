@@ -1,13 +1,27 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+
+import {
+  HttpClient,
+  HttpParams
+} from '@angular/common/http';
+
 import { Observable } from 'rxjs';
+
+import {
+  environment
+} from '../../environments/environment';
 
 
 export interface UploadResponse {
+
   id: number;
+
   originalName: string;
+
   size: number;
+
   downloadToken: string;
+
   expiresAt: string;
 }
 
@@ -15,20 +29,45 @@ export interface UploadResponse {
 export interface DownloadInfoResponse {
 
   originalName: string;
+
   size: number;
+
   contentType: string;
+
   expiresAt: string;
 }
 
 
 export interface FileHistoryResponse {
+
   id: number;
+
   originalName: string;
+
   size: number;
+
   contentType: string;
+
   downloadToken: string;
+
   createdAt: string;
+
   expiresAt: string;
+}
+
+
+export interface FileHistoryPageResponse {
+
+  content:
+    FileHistoryResponse[];
+
+  page: number;
+
+  size: number;
+
+  totalElements: number;
+
+  totalPages: number;
 }
 
 
@@ -37,13 +76,17 @@ export interface FileHistoryResponse {
 })
 export class FileService {
 
-  private readonly apiUrl = 'http://localhost:8080/api/files';
+  private readonly apiUrl =
+    `${environment.apiUrl}/files`;
+
 
   private readonly downloadApiUrl =
-    'http://localhost:8080/api/download';
+    `${environment.apiUrl}/download`;
 
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient
+  ) {
   }
 
 
@@ -52,65 +95,81 @@ export class FileService {
     expirationDays: number
   ): Observable<UploadResponse> {
 
-    const formData = new FormData();
+    const formData =
+      new FormData();
 
-    formData.append('file', file);
-    formData.append('expirationDays', expirationDays.toString());
 
-    const token = localStorage.getItem('token');
+    formData.append(
+      'file',
+      file
+    );
 
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
+
+    formData.append(
+      'expirationDays',
+      expirationDays.toString()
+    );
+
 
     return this.http.post<UploadResponse>(
       `${this.apiUrl}/upload`,
-      formData,
-      { headers }
+      formData
     );
   }
 
 
-  getDownloadInfo(token: string):
-    Observable<DownloadInfoResponse> {
+  getDownloadInfo(
+    token: string
+  ): Observable<DownloadInfoResponse> {
 
-    return this.http.get<DownloadInfoResponse>(
-      `${this.downloadApiUrl}/${token}`
-    );
+    return this.http
+      .get<DownloadInfoResponse>(
+        `${this.downloadApiUrl}/${token}`
+      );
   }
 
 
-  getDownloadUrl(token: string): string {
+  getDownloadUrl(
+    token: string
+  ): string {
 
     return `${this.downloadApiUrl}/${token}/file`;
   }
 
 
-  getHistory(): Observable<FileHistoryResponse[]> {
+  getHistory(
+    page = 0,
+    size = 10
+  ): Observable<FileHistoryPageResponse> {
 
-    const token = localStorage.getItem('token');
+    const params =
+      new HttpParams()
+        .set(
+          'page',
+          page.toString()
+        )
+        .set(
+          'size',
+          size.toString()
+        );
 
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
 
-    return this.http.get<FileHistoryResponse[]>(
-      this.apiUrl,
-      { headers }
-    );
+    return this.http
+      .get<FileHistoryPageResponse>(
+        this.apiUrl,
+        {
+          params
+        }
+      );
   }
 
-  deleteFile(id: number): Observable<void> {
 
-    const token = localStorage.getItem('token');
-
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
+  deleteFile(
+    id: number
+  ): Observable<void> {
 
     return this.http.delete<void>(
-      `${this.apiUrl}/${id}`,
-      { headers }
+      `${this.apiUrl}/${id}`
     );
-}
+  }
 }

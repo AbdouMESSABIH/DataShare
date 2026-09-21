@@ -237,7 +237,7 @@ export JWT_SECRET='votre_secret_jwt'
 Lors de la validation du projet :
 
 ```text
-22 tests backend réussis
+32 tests backend réussis
 ```
 
 Après une modification du frontend ou d'un parcours utilisateur critique :
@@ -250,7 +250,7 @@ npx playwright test
 Lors de la dernière validation :
 
 ```text
-1 test End-to-End réussi
+3 tests End-to-End réussis
 ```
 
 Le scénario E2E vérifie notamment :
@@ -407,7 +407,9 @@ Lors d'une maintenance de sécurité, vérifier également :
 - la vérification du propriétaire avant suppression ;
 - l'expiration des liens ;
 - la limite de taille des fichiers ;
-- le blocage des extensions interdites ;
+- la whitelist des formats autorisés ;
+- la vérification du contenu réel et de la cohérence extension/contenu ;
+- le rate limiting sur la connexion et l'upload ;
 - l'absence de secrets dans Git ;
 - l'absence de mots de passe, JWT ou tokens dans les logs.
 
@@ -453,11 +455,10 @@ Lors de la validation réalisée localement :
 ```text
 10 utilisateurs virtuels
 20 secondes
-171 362 requêtes HTTP
+161 545 requêtes HTTP
 0 % d'erreur
-temps moyen : 1,08 ms
-p95 : 1,37 ms
-environ 8 568 requêtes par seconde
+p95 : 1,44 ms
+environ 8 076,9 requêtes par seconde
 ```
 
 Ces résultats correspondent à un environnement local de développement
@@ -610,6 +611,35 @@ Avant de considérer une opération de maintenance comme terminée :
 - documenter toute décision importante.
 
 ---
+
+---
+
+## 15. Migrations Flyway et purge des fichiers expirés
+
+Le schéma PostgreSQL est versionné avec Flyway dans :
+
+```text
+backend/src/main/resources/db/migration/
+```
+
+Hibernate est configuré avec :
+
+```properties
+spring.jpa.hibernate.ddl-auto=validate
+```
+
+Il ne crée ni ne modifie automatiquement le schéma.
+
+Pour vérifier l'historique Flyway :
+
+```bash
+sudo -u postgres psql -d datashare   -c 'SELECT installed_rank, version, description, type, success FROM flyway_schema_history ORDER BY installed_rank;'
+```
+
+Les fichiers expirés sont supprimés par une tâche planifiée du backend. La purge retire le fichier physique ainsi que ses métadonnées.
+
+Le stockage et le rate limiting étant locaux à l'instance, le MVP est conçu pour une exécution mono-instance. Une architecture multi-instance nécessiterait un stockage partagé et un mécanisme distribué de rate limiting.
+
 
 ## Conclusion
 

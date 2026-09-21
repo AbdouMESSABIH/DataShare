@@ -1,787 +1,296 @@
-# Documentation API REST - DataShare
+# DataShare — Contrat d’interface API
 
-## Objectif
+## 1. Objectif
 
-Ce document décrit l’API REST utilisée par le frontend Angular de DataShare.
+Ce document décrit le contrat d’interface entre le **front-end Angular** et le **back-end Spring Boot** pour le MVP DataShare.
 
-L’API permet notamment :
+Le contrat précise :
+- les endpoints REST ;
+- les méthodes HTTP ;
+- les données envoyées ;
+- les réponses attendues ;
+- les besoins d’authentification ;
+- les principaux codes HTTP.
 
-- la création d’un compte ;
-- l’authentification ;
-- le téléversement d’un fichier ;
-- la consultation de l’historique ;
-- la suppression d’un fichier ;
-- la consultation des informations d’un fichier partagé ;
-- le téléchargement d’un fichier à partir d’un token.
-
----
-
-## 1. URL de base
-
-En environnement local :
-
-```text
-http://localhost:8080
-```
-
-Les endpoints de l’application utilisent le préfixe :
-
-```text
-/api
-```
+> Les noms exacts des routes ne sont pas imposés par les spécifications. Les routes ci-dessous sont le choix retenu pour le projet.
 
 ---
 
-## 2. Format des échanges
+## 2. Endpoints principaux
 
-Les échanges applicatifs utilisent principalement :
-
-```text
-Content-Type: application/json
-```
-
-L’upload de fichiers utilise :
-
-```text
-multipart/form-data
-```
-
-Le téléchargement retourne directement le contenu binaire du fichier.
-
----
-
-## 3. Authentification
-
-DataShare utilise une authentification JWT.
-
-Après une connexion réussie, le backend retourne un token.
-
-Exemple :
-
-```json
-{
-  "token": "eyJ..."
-}
-```
-
-Pour accéder aux routes protégées, le token doit être envoyé dans le header HTTP :
-
-```text
-Authorization: Bearer <JWT>
-```
-
-Les routes de gestion des fichiers nécessitent une authentification.
-
-Les routes permettant de consulter ou télécharger un fichier partagé utilisent
-le token de téléchargement présent dans l’URL.
-
----
-
-# 4. Résumé des endpoints
-
-| Méthode | Endpoint | Authentification | Description |
+| Méthode | Endpoint | Fonction | Authentification |
 |---|---|---|---|
-| POST | `/api/auth/register` | Non | Créer un compte |
-| POST | `/api/auth/login` | Non | Se connecter et obtenir un JWT |
-| POST | `/api/files/upload` | JWT | Téléverser un fichier |
-| GET | `/api/files` | JWT | Consulter son historique |
-| DELETE | `/api/files/{id}` | JWT | Supprimer un de ses fichiers |
-| GET | `/api/download/{token}` | Token de partage | Consulter les informations du fichier |
-| GET | `/api/download/{token}/file` | Token de partage | Télécharger le fichier |
+| POST | `/api/auth/register` | Créer un compte utilisateur | Non |
+| POST | `/api/auth/login` | Se connecter | Non |
+| POST | `/api/files/upload` | Envoyer un fichier | JWT |
+| GET | `/api/files` | Consulter l’historique de ses fichiers | JWT |
+| DELETE | `/api/files/{id}` | Supprimer un de ses fichiers | JWT |
+| GET | `/api/download/{token}` | Consulter les métadonnées d’un fichier partagé | Non |
+| GET | `/api/download/{token}/file` | Télécharger le fichier | Non |
 
 ---
 
-# 5. Authentification
+## 3. Création de compte
 
-## 5.1 Créer un compte
+### Requête
 
-### Endpoint
-
-```http
-POST /api/auth/register
-```
-
-### Authentification
-
-Aucune authentification requise.
-
-### Content-Type
-
-```text
-application/json
-```
-
-### Corps de la requête
+`POST /api/auth/register`
 
 ```json
 {
-  "email": "utilisateur@example.com",
-  "password": "motdepasse"
-}
-```
-
-### Champs
-
-| Champ | Type | Obligatoire | Validation |
-|---|---|---|---|
-| `email` | String | Oui | Non vide et format email valide |
-| `password` | String | Oui | Minimum 8 caractères |
-
-### Réponse en cas de succès
-
-```text
-HTTP 201 Created
-```
-
-La réponse ne contient pas de corps.
-
-### Principales erreurs
-
-```text
-400 Bad Request
-```
-
-Peut être retourné lorsque les données fournies ne respectent pas les règles
-de validation.
-
-Exemples :
-
-- email vide ;
-- email invalide ;
-- mot de passe vide ;
-- mot de passe inférieur à 8 caractères.
-
-```text
-409 Conflict
-```
-
-Retourné lorsqu’un compte existe déjà avec cette adresse email.
-
----
-
-## 5.2 Se connecter
-
-### Endpoint
-
-```http
-POST /api/auth/login
-```
-
-### Authentification
-
-Aucune authentification requise.
-
-### Content-Type
-
-```text
-application/json
-```
-
-### Corps de la requête
-
-```json
-{
-  "email": "utilisateur@example.com",
-  "password": "motdepasse"
-}
-```
-
-### Champs
-
-| Champ | Type | Obligatoire | Validation |
-|---|---|---|---|
-| `email` | String | Oui | Non vide et format email valide |
-| `password` | String | Oui | Non vide |
-
-### Réponse en cas de succès
-
-```text
-HTTP 200 OK
-```
-
-Exemple :
-
-```json
-{
-  "token": "eyJ..."
-}
-```
-
-Le champ `token` contient le JWT à utiliser pour les routes protégées.
-
-### Principales erreurs
-
-```text
-400 Bad Request
-```
-
-Lorsque les données fournies sont invalides.
-
-```text
-401 Unauthorized
-```
-
-Lorsque l’email est inconnu ou que le mot de passe est incorrect.
-
----
-
-# 6. Gestion des fichiers
-
-Les endpoints de cette section nécessitent un JWT valide.
-
-Header attendu :
-
-```text
-Authorization: Bearer <JWT>
-```
-
----
-
-## 6.1 Téléverser un fichier
-
-### Endpoint
-
-```http
-POST /api/files/upload
-```
-
-### Authentification
-
-JWT obligatoire.
-
-### Content-Type
-
-```text
-multipart/form-data
-```
-
-### Paramètres
-
-| Paramètre | Type | Obligatoire | Description |
-|---|---|---|---|
-| `file` | Fichier | Oui | Fichier à téléverser |
-| `expirationDays` | Integer | Non | Durée d’expiration du partage |
-
-`expirationDays` est géré par les règles métier du backend.
-
-La durée maximale autorisée est de :
-
-```text
-7 jours
-```
-
-Si le paramètre n’est pas fourni, le backend applique sa durée d’expiration
-par défaut.
-
-### Contraintes
-
-Taille maximale :
-
-```text
-1 Go
-```
-
-Extensions interdites :
-
-```text
-.exe
-.bat
-```
-
-### Exemple avec curl
-
-```bash
-curl -X POST \
-  http://localhost:8080/api/files/upload \
-  -H "Authorization: Bearer <JWT>" \
-  -F "file=@document.pdf" \
-  -F "expirationDays=3"
-```
-
-### Réponse en cas de succès
-
-```text
-HTTP 201 Created
-```
-
-Exemple :
-
-```json
-{
-  "id": 1,
-  "originalName": "document.pdf",
-  "size": 12345,
-  "downloadToken": "token-de-partage",
-  "expiresAt": "2026-09-16T15:30:00"
-}
-```
-
-### Champs retournés
-
-| Champ | Type | Description |
-|---|---|---|
-| `id` | Long | Identifiant du fichier |
-| `originalName` | String | Nom d’origine du fichier |
-| `size` | Long | Taille du fichier en octets |
-| `downloadToken` | String | Token utilisé pour le partage |
-| `expiresAt` | LocalDateTime | Date et heure d’expiration |
-
-### Principales erreurs
-
-```text
-400 Bad Request
-```
-
-Exemples :
-
-- fichier vide ;
-- durée d’expiration invalide ;
-- expiration supérieure à 7 jours.
-
-```text
-401 Unauthorized
-```
-
-Lorsque le JWT est absent ou invalide.
-
-```text
-413 Payload Too Large
-```
-
-Lorsque le fichier dépasse la taille maximale autorisée.
-
-```text
-415 Unsupported Media Type
-```
-
-Lorsque le fichier utilise une extension interdite comme `.exe` ou `.bat`.
-
----
-
-## 6.2 Consulter son historique
-
-### Endpoint
-
-```http
-GET /api/files
-```
-
-### Authentification
-
-JWT obligatoire.
-
-### Exemple
-
-```bash
-curl \
-  http://localhost:8080/api/files \
-  -H "Authorization: Bearer <JWT>"
-```
-
-### Réponse en cas de succès
-
-```text
-HTTP 200 OK
-```
-
-La réponse est un tableau JSON.
-
-Exemple :
-
-```json
-[
-  {
-    "id": 1,
-    "originalName": "document.pdf",
-    "size": 12345,
-    "contentType": "application/pdf",
-    "downloadToken": "token-de-partage",
-    "createdAt": "2026-09-13T15:30:00",
-    "expiresAt": "2026-09-16T15:30:00"
-  }
-]
-```
-
-### Champs retournés
-
-| Champ | Type | Description |
-|---|---|---|
-| `id` | Long | Identifiant du fichier |
-| `originalName` | String | Nom original |
-| `size` | Long | Taille en octets |
-| `contentType` | String | Type MIME |
-| `downloadToken` | String | Token de téléchargement |
-| `createdAt` | LocalDateTime | Date de création |
-| `expiresAt` | LocalDateTime | Date d’expiration |
-
-Si l’utilisateur ne possède aucun fichier, l’API retourne un tableau vide :
-
-```json
-[]
-```
-
-### Principale erreur
-
-```text
-401 Unauthorized
-```
-
-Lorsque le JWT est absent ou invalide.
-
----
-
-## 6.3 Supprimer un fichier
-
-### Endpoint
-
-```http
-DELETE /api/files/{id}
-```
-
-### Authentification
-
-JWT obligatoire.
-
-### Paramètre de chemin
-
-| Paramètre | Type | Description |
-|---|---|---|
-| `id` | Long | Identifiant du fichier à supprimer |
-
-### Exemple
-
-```bash
-curl -X DELETE \
-  http://localhost:8080/api/files/1 \
-  -H "Authorization: Bearer <JWT>"
-```
-
-### Réponse en cas de succès
-
-```text
-HTTP 204 No Content
-```
-
-La réponse ne contient pas de corps.
-
-Le backend vérifie que le fichier appartient à l’utilisateur authentifié.
-
-Un utilisateur ne doit pas pouvoir supprimer un fichier appartenant
-à un autre utilisateur.
-
----
-
-# 7. Téléchargement par token
-
-Les endpoints suivants permettent d’accéder à un fichier partagé
-à partir de son token de téléchargement.
-
-Ils ne nécessitent pas le JWT du propriétaire.
-
----
-
-## 7.1 Consulter les informations du fichier
-
-### Endpoint
-
-```http
-GET /api/download/{token}
-```
-
-### Paramètre de chemin
-
-| Paramètre | Type | Description |
-|---|---|---|
-| `token` | String | Token de téléchargement du fichier |
-
-### Exemple
-
-```bash
-curl http://localhost:8080/api/download/<TOKEN>
-```
-
-### Réponse en cas de succès
-
-```text
-HTTP 200 OK
-```
-
-Exemple :
-
-```json
-{
-  "originalName": "document.pdf",
-  "size": 12345,
-  "contentType": "application/pdf",
-  "expiresAt": "2026-09-16T15:30:00"
-}
-```
-
-### Champs retournés
-
-| Champ | Type | Description |
-|---|---|---|
-| `originalName` | String | Nom original du fichier |
-| `size` | Long | Taille en octets |
-| `contentType` | String | Type MIME |
-| `expiresAt` | LocalDateTime | Date d’expiration |
-
-### Principales erreurs
-
-```text
-404 Not Found
-```
-
-Lorsque le token n’existe pas.
-
-```text
-410 Gone
-```
-
-Lorsque le lien de téléchargement est expiré.
-
----
-
-## 7.2 Télécharger le fichier
-
-### Endpoint
-
-```http
-GET /api/download/{token}/file
-```
-
-### Paramètre de chemin
-
-| Paramètre | Type | Description |
-|---|---|---|
-| `token` | String | Token de téléchargement |
-
-### Exemple
-
-```bash
-curl -OJ \
-  http://localhost:8080/api/download/<TOKEN>/file
-```
-
-### Réponse en cas de succès
-
-```text
-HTTP 200 OK
-```
-
-La réponse contient directement le fichier.
-
-Le backend renseigne notamment :
-
-```text
-Content-Type
-Content-Length
-Content-Disposition
-```
-
-Le header `Content-Disposition` utilise le nom original du fichier et
-indique au navigateur qu’il doit être téléchargé comme pièce jointe.
-
----
-
-## Gestion du type MIME
-
-Le backend utilise normalement le `contentType` enregistré pour le fichier.
-
-Si cette valeur est absente ou invalide, la valeur de repli utilisée est :
-
-```text
-application/octet-stream
-```
-
-Cette protection évite qu’un type MIME mal formé bloque le téléchargement
-d’un fichier valide.
-
----
-
-## Principales erreurs
-
-```text
-404 Not Found
-```
-
-Lorsque le token n’existe pas ou que la ressource demandée est introuvable.
-
-```text
-410 Gone
-```
-
-Lorsque le token correspond à un fichier dont le lien a expiré.
-
----
-
-# 8. Principaux codes HTTP utilisés
-
-| Code | Signification | Exemple dans DataShare |
-|---:|---|---|
-| `200` | OK | Connexion, historique, téléchargement |
-| `201` | Created | Inscription, upload |
-| `204` | No Content | Suppression réussie |
-| `400` | Bad Request | Données ou paramètres invalides |
-| `401` | Unauthorized | Authentification absente ou incorrecte |
-| `404` | Not Found | Token inconnu |
-| `409` | Conflict | Email déjà utilisé |
-| `410` | Gone | Lien expiré |
-| `413` | Payload Too Large | Fichier supérieur à 1 Go |
-| `415` | Unsupported Media Type | Extension de fichier interdite |
-
----
-
-# 9. Exemple de parcours complet
-
-## 1. Inscription
-
-```http
-POST /api/auth/register
-```
-
-```json
-{
-  "email": "utilisateur@example.com",
+  "email": "user@mail.com",
   "password": "motdepasse123"
 }
 ```
 
-Réponse :
+### Règles principales
 
-```text
-201 Created
-```
+- email valide ;
+- email unique ;
+- mot de passe d’au moins 8 caractères ;
+- mot de passe stocké sous forme hashée.
 
----
-
-## 2. Connexion
-
-```http
-POST /api/auth/login
-```
-
-```json
-{
-  "email": "utilisateur@example.com",
-  "password": "motdepasse123"
-}
-```
-
-Réponse :
-
-```json
-{
-  "token": "eyJ..."
-}
-```
-
----
-
-## 3. Upload
-
-```http
-POST /api/files/upload
-Authorization: Bearer <JWT>
-```
-
-Réponse :
+### Réponse — 201 Created
 
 ```json
 {
   "id": 1,
-  "originalName": "document.pdf",
-  "size": 12345,
-  "downloadToken": "token-de-partage",
-  "expiresAt": "2026-09-16T15:30:00"
+  "email": "user@mail.com"
 }
 ```
 
----
+### Erreurs possibles
 
-## 4. Historique
-
-```http
-GET /api/files
-Authorization: Bearer <JWT>
-```
+- `400 Bad Request` : données invalides ;
+- `409 Conflict` : email déjà utilisé.
 
 ---
 
-## 5. Informations publiques du fichier
+## 4. Connexion
 
-```http
-GET /api/download/{token}
+### Requête
+
+`POST /api/auth/login`
+
+```json
+{
+  "email": "user@mail.com",
+  "password": "motdepasse123"
+}
 ```
+
+### Réponse — 200 OK
+
+```json
+{
+  "token": "eyJhbGciOi..."
+}
+```
+
+Le token JWT est ensuite envoyé par Angular dans les requêtes protégées.
+
+### Erreurs possibles
+
+- `400 Bad Request` : format invalide ;
+- `401 Unauthorized` : identifiants incorrects.
 
 ---
 
-## 6. Téléchargement
+## 5. Upload d’un fichier
 
-```http
-GET /api/download/{token}/file
-```
+### Requête
 
----
+`POST /api/files`
 
-## 7. Suppression
+Authentification JWT obligatoire.
 
-```http
-DELETE /api/files/{id}
-Authorization: Bearer <JWT>
-```
-
-Réponse :
+La requête contient notamment :
 
 ```text
-204 No Content
+file = document.pdf
+expirationDays = 7
 ```
+
+### Règles principales
+
+- utilisateur connecté ;
+- taille maximale : 1 Go ;
+- type de fichier autorisé ;
+- expiration maximale : 7 jours ;
+- génération d’un token de téléchargement unique et non prédictible.
+
+### Réponse — 201 Created
+
+```json
+{
+  "id": 12,
+  "fileName": "document.pdf",
+  "downloadToken": "x8F2a91K",
+  "expiresAt": "2026-09-16T18:00:00"
+}
+```
+
+### Erreurs possibles
+
+- `400 Bad Request` : fichier invalide ou paramètres incorrects ;
+- `401 Unauthorized` : utilisateur non authentifié.
 
 ---
 
-# 10. Architecture des appels
+## 6. Consultation de l’historique
+
+### Requête
+
+`GET /api/files?page=0&size=10`
+
+Authentification JWT obligatoire.
+
+Paramètres :
+
+- `page` : numéro de page à partir de 0 ;
+- `size` : nombre d'éléments par page, de 1 à 50 ;
+- valeurs par défaut : `page=0` et `size=10`.
+
+### Réponse - 200 OK
+
+```json
+{
+  "content": [
+    {
+      "id": 12,
+      "originalName": "document.pdf",
+      "size": 2048000,
+      "contentType": "application/pdf",
+      "downloadToken": "x8F2a91K",
+      "createdAt": "2026-09-09T18:00:00",
+      "expiresAt": "2026-09-16T18:00:00"
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+L'utilisateur ne reçoit que les fichiers qui lui appartiennent.
+
+
+---
+
+## 7. Suppression d’un fichier
+
+### Requête
+
+`DELETE /api/files/{id}`
+
+Exemple :
+
+`DELETE /api/files/12`
+
+Authentification JWT obligatoire.
+
+### Règles principales
+
+- le fichier doit exister ;
+- l’utilisateur connecté doit être propriétaire du fichier ;
+- la suppression retire le fichier physique et ses métadonnées ;
+- la suppression est irréversible.
+
+### Réponse
+
+`204 No Content`
+
+### Erreurs possibles
+
+- `401 Unauthorized` : utilisateur non authentifié ;
+- `403 Forbidden` : fichier appartenant à un autre utilisateur ;
+- `404 Not Found` : fichier inexistant.
+
+---
+
+## 8. Consultation d’un lien de téléchargement
+
+### Requête
+
+`GET /api/download/{token}`
+
+Exemple :
+
+`GET /api/download/x8F2a91K`
+
+### Réponse — 200 OK
+
+```json
+{
+  "fileName": "document.pdf",
+  "size": 2048000,
+  "type": "application/pdf",
+  "expiresAt": "2026-09-16T18:00:00"
+}
+```
+
+### Règles principales
+
+- le token doit être valide ;
+- le lien ne doit pas être expiré ;
+- les métadonnées sont affichées avant le téléchargement.
+
+### Erreurs possibles
+
+- `404 Not Found` : token invalide ;
+- `410 Gone` : lien expiré.
+
+---
+
+## 9. Téléchargement du fichier
+
+### Requête
+
+`GET /api/download/{token}/file`
+
+Exemple :
+
+`GET /api/download/x8F2a91K/file`
+
+### Réponse
+
+Le back-end renvoie le fichier physique au client.
+
+### Erreurs possibles
+
+- `404 Not Found` : fichier ou token inexistant ;
+- `410 Gone` : lien expiré.
+
+---
+
+## 10. Codes HTTP principaux
+
+| Code | Signification |
+|---|---|
+| 200 | Requête réussie |
+| 201 | Ressource créée avec succès |
+| 204 | Action réussie sans contenu à renvoyer |
+| 400 | Requête invalide |
+| 401 | Utilisateur non authentifié |
+| 403 | Action interdite |
+| 404 | Ressource introuvable |
+| 409 | Conflit, par exemple email déjà utilisé |
+| 410 | Ressource expirée / plus disponible |
+| 500 | Erreur interne du serveur |
+
+---
+
+## 11. Résumé du flux
 
 ```text
 Angular
-   |
-   | HTTP / JSON / JWT
-   v
-Controller Spring Boot
-   |
-   v
-Service
-   |
-   v
-Repository
-   |
-   +--> PostgreSQL
-   |
-   +--> Stockage local
+   ↓
+API REST / JSON / HTTPS
+   ↓
+Spring Boot
+   ↓
+PostgreSQL + stockage local
 ```
 
-Les contrôleurs définissent les endpoints HTTP.
-
-Les services contiennent les règles métier.
-
-Les repositories gèrent l’accès aux données PostgreSQL.
-
-Les fichiers physiques sont conservés dans le stockage local de l’application.
-
----
-
-# Conclusion
-
-L’API DataShare repose sur une architecture REST simple.
-
-Elle sépare :
-
-- l’authentification ;
-- la gestion des fichiers privés ;
-- le téléchargement public par token.
-
-Les routes protégées utilisent JWT tandis que les liens de partage utilisent
-un token spécifique au fichier.
-
-Les principaux cas d’erreur sont traités avec des codes HTTP explicites,
-notamment pour les données invalides, les erreurs d’authentification,
-les tokens inconnus, les liens expirés et les fichiers interdits.
+Pour les routes protégées, Angular envoie le JWT au back-end afin que Spring Boot identifie l’utilisateur connecté.

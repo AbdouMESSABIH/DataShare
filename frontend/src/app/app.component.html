@@ -1,36 +1,46 @@
 <header class="app-header">
 
-    <a href="/upload" class="brand">
+    <a
+        routerLink="/upload"
+        class="brand"
+    >
         <img
             src="/assets/datashare-logo.png.png"
             alt="Logo DataShare"
             class="brand-logo"
         >
 
-        <span class="brand-name">DataShare</span>
+        <span class="brand-name">
+            DataShare
+        </span>
     </a>
 
-    <nav class="navigation">
 
-        <a href="/upload">
+    <nav
+        class="navigation"
+        aria-label="Navigation principale"
+    >
+
+        <a routerLink="/upload">
             Upload
         </a>
 
-        <a href="/history">
-            History
+        <a routerLink="/history">
+            Historique
         </a>
 
-        <a href="/login">
+        <a routerLink="/login">
             Connexion
         </a>
 
-        <a href="/register">
+        <a routerLink="/register">
             Inscription
         </a>
 
     </nav>
 
 </header>
+
 
 <main class="app-content">
 
