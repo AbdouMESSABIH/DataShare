@@ -13,17 +13,21 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
 import org.springframework.http.HttpStatus;
+
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.stereotype.Service;
 
 import org.springframework.util.StringUtils;
 
 import org.springframework.web.multipart.MultipartFile;
-
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
@@ -92,13 +96,19 @@ public class FileService {
             userRepository;
 
 
+    private final PasswordEncoder
+            passwordEncoder;
+
+
     private final Path uploadDirectory =
             Paths.get("uploads");
 
 
+    @Autowired
     public FileService(
             StoredFileRepository storedFileRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder
     ) {
 
         this.storedFileRepository =
@@ -106,6 +116,26 @@ public class FileService {
 
         this.userRepository =
                 userRepository;
+
+        this.passwordEncoder =
+                passwordEncoder;
+    }
+
+
+    /*
+     * Constructeur conservé pour la compatibilité
+     * avec les anciens tests unitaires.
+     */
+    public FileService(
+            StoredFileRepository storedFileRepository,
+            UserRepository userRepository
+    ) {
+
+        this(
+                storedFileRepository,
+                userRepository,
+                new BCryptPasswordEncoder()
+        );
     }
 
 
@@ -131,7 +161,8 @@ public class FileService {
     public UploadResponse upload(
             MultipartFile file,
             String email,
-            Integer expirationDays
+            Integer expirationDays,
+            String password
     ) {
 
         if (file.isEmpty()) {
@@ -264,6 +295,19 @@ public class FileService {
                 );
 
 
+        if (
+                password != null
+                && !password.isBlank()
+        ) {
+
+            storedFile.setPasswordHash(
+                    passwordEncoder.encode(
+                            password
+                    )
+            );
+        }
+
+
         StoredFile savedFile =
                 storedFileRepository.save(
                         storedFile
@@ -300,6 +344,25 @@ public class FileService {
                 savedFile.getSize(),
                 savedFile.getDownloadToken(),
                 savedFile.getExpiresAt()
+        );
+    }
+
+
+    /*
+     * Ancienne signature conservée pour que les tests
+     * existants continuent de compiler.
+     */
+    public UploadResponse upload(
+            MultipartFile file,
+            String email,
+            Integer expirationDays
+    ) {
+
+        return upload(
+                file,
+                email,
+                expirationDays,
+                null
         );
     }
 
@@ -627,7 +690,7 @@ public class FileService {
     }
 
 
-    public StoredFile getByDownloadToken(
+    private StoredFile findValidFile(
             String downloadToken
     ) {
 
@@ -677,6 +740,67 @@ public class FileService {
                     HttpStatus.NOT_FOUND,
                     "Le fichier n'existe plus"
             );
+        }
+
+
+        return storedFile;
+    }
+
+
+    public StoredFile getByDownloadToken(
+            String downloadToken
+    ) {
+
+        return findValidFile(
+                downloadToken
+        );
+    }
+
+
+    public StoredFile getByDownloadToken(
+            String downloadToken,
+            String password
+    ) {
+
+        StoredFile storedFile =
+                findValidFile(
+                        downloadToken
+                );
+
+
+        String passwordHash =
+                storedFile.getPasswordHash();
+
+
+        if (
+                passwordHash != null
+                && !passwordHash.isBlank()
+        ) {
+
+            if (
+                    password == null
+                    || password.isBlank()
+            ) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Mot de passe requis"
+                );
+            }
+
+
+            if (
+                    !passwordEncoder.matches(
+                            password,
+                            passwordHash
+                    )
+            ) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Mot de passe incorrect"
+                );
+            }
         }
 
 

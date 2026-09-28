@@ -2,53 +2,164 @@
 
   <div class="download-card">
 
-    <h1>
-      Télécharger un fichier
-    </h1>
+
+    <div
+      class="loading-state"
+      *ngIf="
+        !fileInfo
+        && !errorMessage
+      "
+    >
+
+      <div class="spinner"></div>
+
+      <h1>
+        Chargement du fichier
+      </h1>
+
+      <p>
+        Vérification du lien...
+      </p>
+
+    </div>
 
 
-    <p
-      class="error"
+    <div
+      class="available-state"
+      *ngIf="fileInfo"
+    >
+
+      <div class="download-icon">
+        ↓
+      </div>
+
+
+      <h1>
+        Télécharger le fichier
+      </h1>
+
+
+      <h2>
+        {{ fileInfo.originalName }}
+      </h2>
+
+
+      <div class="file-information">
+
+        <div>
+
+          <span>
+            Taille
+          </span>
+
+          <strong>
+            {{
+              formatFileSize(
+                fileInfo.size
+              )
+            }}
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span>
+            Type
+          </span>
+
+          <strong>
+            {{ fileInfo.contentType }}
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span>
+            Disponible jusqu'au
+          </span>
+
+          <strong>
+            {{
+              fileInfo.expiresAt
+                | date:'dd/MM/yyyy HH:mm'
+            }}
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="downloadPassword">
+          Mot de passe
+        </label>
+
+
+        <input
+          id="downloadPassword"
+          name="downloadPassword"
+          type="password"
+          [(ngModel)]="password"
+          placeholder="Saisissez le mot de passe"
+          autocomplete="current-password"
+          (keyup.enter)="download()"
+        >
+
+      </div>
+
+
+      <button
+        class="download-button"
+        type="button"
+        [disabled]="downloading"
+        (click)="download()"
+      >
+
+        {{
+          downloading
+            ? 'Téléchargement...'
+            : 'Télécharger le fichier'
+        }}
+
+      </button>
+
+
+      <p
+        class="error-message"
+        *ngIf="downloadErrorMessage"
+        role="alert"
+      >
+        {{ downloadErrorMessage }}
+      </p>
+
+    </div>
+
+
+    <div
+      class="error-state"
       *ngIf="errorMessage"
       role="alert"
-      aria-live="assertive"
     >
-      {{ errorMessage }}
-    </p>
+
+      <div class="error-icon">
+        !
+      </div>
 
 
-    <div *ngIf="fileInfo">
-
-      <p>
-        <strong>Nom :</strong>
-        {{ fileInfo.originalName }}
-      </p>
-
-
-      <p>
-        <strong>Taille :</strong>
-        {{ formatFileSize(fileInfo.size) }}
-      </p>
+      <h1>
+        Lien indisponible
+      </h1>
 
 
       <p>
-        <strong>Type :</strong>
-        {{ fileInfo.contentType }}
+        {{ errorMessage }}
       </p>
-
-
-      <p>
-        <strong>Expiration :</strong>
-        {{ fileInfo.expiresAt | date:'dd/MM/yyyy HH:mm' }}
-      </p>
-
-
-      <a
-        class="download-button"
-        [href]="downloadUrl"
-      >
-        Télécharger le fichier
-      </a>
 
     </div>
 

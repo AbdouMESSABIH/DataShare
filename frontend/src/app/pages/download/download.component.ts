@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
 import {
@@ -14,21 +15,37 @@ import {
 
 @Component({
   selector: 'app-download',
+
   imports: [
-    CommonModule
+    CommonModule,
+    FormsModule
   ],
-  templateUrl: './download.component.html',
-  styleUrl: './download.component.scss'
+
+  templateUrl:
+    './download.component.html',
+
+  styleUrl:
+    './download.component.scss'
 })
-export class DownloadComponent implements OnInit {
+export class DownloadComponent
+  implements OnInit {
 
-  fileInfo: DownloadInfoResponse | null = null;
+  fileInfo:
+    DownloadInfoResponse | null = null;
 
-  downloadUrl = '';
+  token = '';
+
+  password = '';
 
   errorMessage = '';
 
-  readonly formatFileSize = formatFileSize;
+  downloadErrorMessage = '';
+
+  downloading = false;
+
+
+  readonly formatFileSize =
+    formatFileSize;
 
 
   constructor(
@@ -41,7 +58,9 @@ export class DownloadComponent implements OnInit {
   ngOnInit(): void {
 
     const token =
-      this.route.snapshot.paramMap.get('token');
+      this.route.snapshot
+        .paramMap
+        .get('token');
 
 
     if (!token) {
@@ -53,28 +72,34 @@ export class DownloadComponent implements OnInit {
     }
 
 
-    this.downloadUrl =
-      this.fileService.getDownloadUrl(token);
+    this.token = token;
 
 
     this.fileService
-      .getDownloadInfo(token)
+      .getDownloadInfo(
+        token
+      )
       .subscribe({
 
         next: (response) => {
 
-          this.fileInfo = response;
+          this.fileInfo =
+            response;
         },
 
 
         error: (error) => {
 
-          if (error.status === 404) {
+          if (
+            error.status === 404
+          ) {
 
             this.errorMessage =
               'Lien de téléchargement invalide';
 
-          } else if (error.status === 410) {
+          } else if (
+            error.status === 410
+          ) {
 
             this.errorMessage =
               'Ce lien de téléchargement a expiré';
@@ -82,6 +107,132 @@ export class DownloadComponent implements OnInit {
           } else {
 
             this.errorMessage =
+              'Une erreur est survenue';
+          }
+        }
+      });
+  }
+
+
+  download(): void {
+
+    this.downloadErrorMessage = '';
+
+
+    if (!this.password.trim()) {
+
+      this.downloadErrorMessage =
+        'Veuillez saisir le mot de passe';
+
+      return;
+    }
+
+
+    this.downloading = true;
+
+
+    this.fileService
+      .downloadFile(
+        this.token,
+        this.password
+      )
+      .subscribe({
+
+        next: (response) => {
+
+          this.downloading = false;
+
+
+          if (!response.body) {
+
+            this.downloadErrorMessage =
+              'Impossible de télécharger le fichier';
+
+            return;
+          }
+
+
+          const url =
+            window.URL.createObjectURL(
+              response.body
+            );
+
+
+          const link =
+            document.createElement(
+              'a'
+            );
+
+
+          link.href =
+            url;
+
+
+          link.download =
+            this.fileInfo
+              ?.originalName
+            ?? 'fichier';
+
+
+          document.body
+            .appendChild(
+              link
+            );
+
+
+          link.click();
+
+
+          document.body
+            .removeChild(
+              link
+            );
+
+
+          window.URL
+            .revokeObjectURL(
+              url
+            );
+        },
+
+
+        error: (error) => {
+
+          this.downloading =
+            false;
+
+
+          if (
+            error.status === 403
+          ) {
+
+            this.downloadErrorMessage =
+              'Mot de passe incorrect';
+
+          } else if (
+            error.status === 404
+          ) {
+
+            this.downloadErrorMessage =
+              'Lien de téléchargement invalide';
+
+          } else if (
+            error.status === 410
+          ) {
+
+            this.downloadErrorMessage =
+              'Ce lien de téléchargement a expiré';
+
+          } else if (
+            error.status === 429
+          ) {
+
+            this.downloadErrorMessage =
+              'Trop de tentatives. Réessayez plus tard';
+
+          } else {
+
+            this.downloadErrorMessage =
               'Une erreur est survenue';
           }
         }

@@ -20,8 +20,11 @@ import {
     FormsModule
   ],
 
-  templateUrl: './upload.component.html',
-  styleUrl: './upload.component.scss'
+  templateUrl:
+    './upload.component.html',
+
+  styleUrl:
+    './upload.component.scss'
 })
 export class UploadComponent {
 
@@ -29,12 +32,15 @@ export class UploadComponent {
 
   expirationDays = 7;
 
+  password = '';
+
   message = '';
+
   errorMessage = '';
+
   copyMessage = '';
 
-  uploadResult:
-    UploadResponse | null = null;
+  uploadResult: UploadResponse | null = null;
 
 
   readonly formatFileSize =
@@ -62,14 +68,42 @@ export class UploadComponent {
 
       this.selectedFile =
         input.files[0];
+
+      this.message = '';
+
+      this.errorMessage = '';
+
+      this.copyMessage = '';
+
+      this.uploadResult = null;
     }
+  }
+
+
+  resetUpload(): void {
+
+    this.selectedFile = null;
+
+    this.uploadResult = null;
+
+    this.message = '';
+
+    this.errorMessage = '';
+
+    this.copyMessage = '';
+
+    this.expirationDays = 7;
+
+    this.password = '';
   }
 
 
   onSubmit(): void {
 
     this.message = '';
+
     this.errorMessage = '';
+
     this.copyMessage = '';
 
     this.uploadResult = null;
@@ -84,10 +118,20 @@ export class UploadComponent {
     }
 
 
+    if (!this.password.trim()) {
+
+      this.errorMessage =
+        'Veuillez choisir un mot de passe';
+
+      return;
+    }
+
+
     this.fileService
       .upload(
         this.selectedFile,
-        this.expirationDays
+        this.expirationDays,
+        this.password
       )
       .subscribe({
 
@@ -103,7 +147,9 @@ export class UploadComponent {
 
         error: (error) => {
 
-          if (error.status === 415) {
+          if (
+            error.status === 415
+          ) {
 
             this.errorMessage =
               'Ce type de fichier est interdit';
@@ -167,6 +213,7 @@ export class UploadComponent {
 
       await navigator.clipboard
         .writeText(url);
+
 
       this.copyMessage =
         'Lien copié dans le presse-papiers';

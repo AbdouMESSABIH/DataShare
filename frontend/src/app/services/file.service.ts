@@ -2,7 +2,9 @@ import { Injectable } from '@angular/core';
 
 import {
   HttpClient,
-  HttpParams
+  HttpHeaders,
+  HttpParams,
+  HttpResponse
 } from '@angular/common/http';
 
 import { Observable } from 'rxjs';
@@ -92,7 +94,8 @@ export class FileService {
 
   upload(
     file: File,
-    expirationDays: number
+    expirationDays: number,
+    password = ''
   ): Observable<UploadResponse> {
 
     const formData =
@@ -109,6 +112,15 @@ export class FileService {
       'expirationDays',
       expirationDays.toString()
     );
+
+
+    if (password.trim()) {
+
+      formData.append(
+        'password',
+        password
+      );
+    }
 
 
     return this.http.post<UploadResponse>(
@@ -134,6 +146,36 @@ export class FileService {
   ): string {
 
     return `${this.downloadApiUrl}/${token}/file`;
+  }
+
+
+  downloadFile(
+    token: string,
+    password: string
+  ): Observable<HttpResponse<Blob>> {
+
+    let headers =
+      new HttpHeaders();
+
+
+    if (password.trim()) {
+
+      headers =
+        headers.set(
+          'X-Download-Password',
+          password
+        );
+    }
+
+
+    return this.http.get(
+      `${this.downloadApiUrl}/${token}/file`,
+      {
+        headers,
+        observe: 'response',
+        responseType: 'blob'
+      }
+    );
   }
 
 

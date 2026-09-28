@@ -2,11 +2,14 @@ package com.datashare.backend.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -16,21 +19,29 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+
 @Configuration
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationFilter
+            jwtAuthenticationFilter;
+
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter
     ) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+
+        this.jwtAuthenticationFilter =
+                jwtAuthenticationFilter;
     }
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+
         return new BCryptPasswordEncoder();
     }
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -38,22 +49,33 @@ public class SecurityConfig {
     ) throws Exception {
 
         http
-                .cors(Customizer.withDefaults())
-
-                .csrf(csrf -> csrf.disable())
-
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .cors(
+                        Customizer.withDefaults()
                 )
 
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/auth/register",
-                                "/api/auth/login",
-                                "/error",
-                                "/api/download/**"
-                        ).permitAll()
-                        .anyRequest().authenticated()
+                .csrf(
+                        csrf ->
+                                csrf.disable()
+                )
+
+                .sessionManagement(
+                        session ->
+                                session.sessionCreationPolicy(
+                                        SessionCreationPolicy.STATELESS
+                                )
+                )
+
+                .authorizeHttpRequests(
+                        auth ->
+                                auth.requestMatchers(
+                                                "/api/auth/register",
+                                                "/api/auth/login",
+                                                "/error",
+                                                "/api/download/**"
+                                        )
+                                        .permitAll()
+                                        .anyRequest()
+                                        .authenticated()
                 )
 
                 .addFilterBefore(
@@ -61,17 +83,26 @@ public class SecurityConfig {
                         UsernamePasswordAuthenticationFilter.class
                 );
 
+
         return http.build();
     }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration configuration = new CorsConfiguration();
+    @Bean
+    public CorsConfigurationSource
+    corsConfigurationSource() {
+
+        CorsConfiguration configuration =
+                new CorsConfiguration();
+
 
         configuration.setAllowedOrigins(
-                List.of("http://localhost:4200")
+                List.of(
+                        "http://localhost:4200",
+                        "http://localhost:4173"
+                )
         );
+
 
         configuration.setAllowedMethods(
                 List.of(
@@ -84,20 +115,25 @@ public class SecurityConfig {
                 )
         );
 
+
         configuration.setAllowedHeaders(
                 List.of(
                         "Authorization",
-                        "Content-Type"
+                        "Content-Type",
+                        "X-Download-Password"
                 )
         );
 
+
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
+
 
         source.registerCorsConfiguration(
                 "/**",
                 configuration
         );
+
 
         return source;
     }

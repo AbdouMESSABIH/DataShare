@@ -47,6 +47,12 @@ public class FileController {
             )
             Integer expirationDays,
 
+            @RequestParam(
+                    value = "password",
+                    required = false
+            )
+            String password,
+
             Authentication authentication
     ) {
 
@@ -58,7 +64,8 @@ public class FileController {
                 fileService.upload(
                         file,
                         email,
-                        expirationDays
+                        expirationDays,
+                        password
                 );
 
 

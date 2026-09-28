@@ -1,34 +1,118 @@
 <section class="upload-page">
 
-  <div class="upload-card">
+  <input
+    id="file"
+    class="hidden-file-input"
+    type="file"
+    accept=".txt,.pdf,.png,.jpg,.jpeg"
+    (change)="onFileSelected($event)"
+  >
 
-    <h1 id="upload-title">
+
+  <div
+    class="upload-home"
+    *ngIf="
+      !selectedFile
+      && !uploadResult
+    "
+  >
+
+    <p class="home-title">
+      Téléverser un fichier
+    </p>
+
+
+    <label
+      class="cloud-button"
+      for="file"
+      aria-label="Choisir un fichier"
+    >
+
+      <span class="cloud">
+        ☁
+      </span>
+
+      <span class="arrow">
+        ↑
+      </span>
+
+    </label>
+
+
+    <p class="home-help">
+      Cliquez pour sélectionner votre fichier
+    </p>
+
+  </div>
+
+
+  <div
+    class="upload-card"
+    *ngIf="
+      selectedFile
+      && !uploadResult
+    "
+  >
+
+    <h1>
       Téléverser un fichier
     </h1>
 
 
     <form
       (ngSubmit)="onSubmit()"
-      aria-labelledby="upload-title"
     >
+
+      <div class="selected-file">
+
+        <div>
+
+          <span class="selected-label">
+            Fichier sélectionné
+          </span>
+
+          <strong>
+            {{ selectedFile.name }}
+          </strong>
+
+        </div>
+
+
+        <span class="file-size">
+          {{
+            formatFileSize(
+              selectedFile.size
+            )
+          }}
+        </span>
+
+      </div>
+
+
+      <label
+        class="change-file"
+        for="file"
+      >
+        Choisir un autre fichier
+      </label>
+
 
       <div class="form-group">
 
-        <label for="file">
-          Fichier
+        <label for="password">
+          Mot de passe
         </label>
 
-        <input
-          id="file"
-          type="file"
-          aria-describedby="file-help"
-          (change)="onFileSelected($event)"
-        >
 
-        <p id="file-help">
-          Taille maximale : 1 Go.
-          Les types de fichiers autorisés sont contrôlés par l'application.
-        </p>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          [(ngModel)]="password"
+          placeholder="Choisissez un mot de passe"
+          autocomplete="new-password"
+          required
+        >
 
       </div>
 
@@ -39,31 +123,56 @@
           Durée avant expiration
         </label>
 
+
         <select
           id="expirationDays"
           name="expirationDays"
           [(ngModel)]="expirationDays"
-          aria-describedby="expiration-help"
         >
 
-          <option [ngValue]="1">1 jour</option>
-          <option [ngValue]="2">2 jours</option>
-          <option [ngValue]="3">3 jours</option>
-          <option [ngValue]="4">4 jours</option>
-          <option [ngValue]="5">5 jours</option>
-          <option [ngValue]="6">6 jours</option>
-          <option [ngValue]="7">7 jours</option>
+          <option [ngValue]="1">
+            1 jour
+          </option>
+
+          <option [ngValue]="2">
+            2 jours
+          </option>
+
+          <option [ngValue]="3">
+            3 jours
+          </option>
+
+          <option [ngValue]="4">
+            4 jours
+          </option>
+
+          <option [ngValue]="5">
+            5 jours
+          </option>
+
+          <option [ngValue]="6">
+            6 jours
+          </option>
+
+          <option [ngValue]="7">
+            7 jours
+          </option>
 
         </select>
-
-        <p id="expiration-help">
-          Le lien de téléchargement peut être valide entre 1 et 7 jours.
-        </p>
 
       </div>
 
 
-      <button type="submit">
+      <p class="format-help">
+        TXT, PDF, PNG, JPG, JPEG
+        — 1 Go maximum.
+      </p>
+
+
+      <button
+        class="upload-button"
+        type="submit"
+      >
         Téléverser
       </button>
 
@@ -71,87 +180,109 @@
 
 
     <p
-      class="success"
-      *ngIf="message"
-      role="status"
-      aria-live="polite"
-    >
-      {{ message }}
-    </p>
-
-
-    <p
-      class="error"
+      class="error-message"
       *ngIf="errorMessage"
       role="alert"
-      aria-live="assertive"
     >
       {{ errorMessage }}
     </p>
 
-
-    <div
-      class="result"
-      *ngIf="uploadResult"
-      aria-labelledby="upload-result-title"
-    >
-
-      <h2 id="upload-result-title">
-        Fichier partagé
-      </h2>
+  </div>
 
 
-      <p>
-        <strong>Nom :</strong>
-        {{ uploadResult.originalName }}
-      </p>
+  <div
+    class="upload-card result-card"
+    *ngIf="uploadResult"
+  >
+
+    <div class="success-icon">
+      ✓
+    </div>
 
 
-      <p>
-        <strong>Taille :</strong>
-        {{ formatFileSize(uploadResult.size) }}
-      </p>
+    <h1>
+      Fichier partagé !
+    </h1>
 
 
-      <p>
-        <strong>Expiration :</strong>
-        {{ uploadResult.expiresAt | date:'dd/MM/yyyy HH:mm' }}
-      </p>
+    <p class="result-name">
+      {{ uploadResult.originalName }}
+    </p>
 
 
-      <p>
-        <strong>Lien de partage :</strong>
-      </p>
+    <div class="result-meta">
 
+      <span>
+        {{
+          formatFileSize(
+            uploadResult.size
+          )
+        }}
+      </span>
 
-      <a
-        [href]="getShareUrl(uploadResult.downloadToken)"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {{ getShareUrl(uploadResult.downloadToken) }}
-      </a>
-
-
-      <p>
-        <button
-          type="button"
-          (click)="copyShareLink(uploadResult.downloadToken)"
-        >
-          Copier le lien
-        </button>
-      </p>
-
-
-      <p
-        *ngIf="copyMessage"
-        role="status"
-        aria-live="polite"
-      >
-        {{ copyMessage }}
-      </p>
+      <span>
+        Expire le
+        {{
+          uploadResult.expiresAt
+            | date:'dd/MM/yyyy'
+        }}
+      </span>
 
     </div>
+
+
+    <p class="share-title">
+      Lien de partage
+    </p>
+
+
+    <a
+      class="share-link"
+      [href]="
+        getShareUrl(
+          uploadResult.downloadToken
+        )
+      "
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {{
+        getShareUrl(
+          uploadResult.downloadToken
+        )
+      }}
+    </a>
+
+
+    <button
+      class="copy-button"
+      type="button"
+      (click)="
+        copyShareLink(
+          uploadResult.downloadToken
+        )
+      "
+    >
+      Copier le lien
+    </button>
+
+
+    <button
+      class="another-button"
+      type="button"
+      (click)="resetUpload()"
+    >
+      Téléverser un autre fichier
+    </button>
+
+
+    <p
+      class="copy-message"
+      *ngIf="copyMessage"
+      role="status"
+    >
+      {{ copyMessage }}
+    </p>
 
   </div>
 

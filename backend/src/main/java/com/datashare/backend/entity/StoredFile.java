@@ -33,6 +33,9 @@ public class StoredFile {
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
+    @Column(name = "password_hash")
+    private String passwordHash;
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
@@ -90,6 +93,16 @@ public class StoredFile {
 
     public LocalDateTime getExpiresAt() {
         return expiresAt;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(
+            String passwordHash
+    ) {
+        this.passwordHash = passwordHash;
     }
 
     public User getOwner() {
