@@ -4,6 +4,10 @@ import {
 } from '@angular/router';
 
 import {
+  HttpResponse
+} from '@angular/common/http';
+
+import {
   of,
   throwError
 } from 'rxjs';
@@ -52,7 +56,7 @@ describe('DownloadComponent', () => {
         'FileService',
         [
           'getDownloadInfo',
-          'getDownloadUrl'
+          'downloadFile'
         ]
       );
   });
@@ -61,13 +65,6 @@ describe('DownloadComponent', () => {
   it(
     'should load file information for a valid token',
     () => {
-
-      fileService
-        .getDownloadUrl
-        .and.returnValue(
-          'http://localhost:8080/api/download/valid-token/file'
-        );
-
 
       fileService
         .getDownloadInfo
@@ -105,9 +102,9 @@ describe('DownloadComponent', () => {
 
 
       expect(
-        component.downloadUrl
-      ).toContain(
-        'valid-token/file'
+        component.token
+      ).toBe(
+        'valid-token'
       );
     }
   );
@@ -118,7 +115,9 @@ describe('DownloadComponent', () => {
     () => {
 
       const component =
-        createComponent(null);
+        createComponent(
+          null
+        );
 
 
       component.ngOnInit();
@@ -141,11 +140,6 @@ describe('DownloadComponent', () => {
   it(
     'should translate HTTP 404 into an invalid link message',
     () => {
-
-      fileService
-        .getDownloadUrl
-        .and.returnValue('');
-
 
       fileService
         .getDownloadInfo
@@ -181,11 +175,6 @@ describe('DownloadComponent', () => {
     () => {
 
       fileService
-        .getDownloadUrl
-        .and.returnValue('');
-
-
-      fileService
         .getDownloadInfo
         .and.returnValue(
           throwError(
@@ -215,13 +204,8 @@ describe('DownloadComponent', () => {
 
 
   it(
-    'should display a generic message for an unexpected error',
+    'should display a generic message for an unexpected info error',
     () => {
-
-      fileService
-        .getDownloadUrl
-        .and.returnValue('');
-
 
       fileService
         .getDownloadInfo
@@ -250,4 +234,305 @@ describe('DownloadComponent', () => {
       );
     }
   );
+
+
+  it(
+    'should require a password before downloading',
+    () => {
+
+      const component =
+        createComponent(
+          'valid-token'
+        );
+
+
+      component.token =
+        'valid-token';
+
+      component.password =
+        '';
+
+
+      component.download();
+
+
+      expect(
+        component.downloadErrorMessage
+      ).toBe(
+        'Veuillez saisir le mot de passe'
+      );
+
+
+      expect(
+        fileService.downloadFile
+      ).not.toHaveBeenCalled();
+    }
+  );
+
+
+  it(
+    'should send the token and password when downloading',
+    () => {
+
+      const blob =
+        new Blob(
+          ['test'],
+          {
+            type: 'application/pdf'
+          }
+        );
+
+
+      fileService
+        .downloadFile
+        .and.returnValue(
+          of(
+            new HttpResponse<Blob>({
+              body: blob,
+              status: 200
+            })
+          )
+        );
+
+
+      const component =
+        createComponent(
+          'valid-token'
+        );
+
+
+      component.token =
+        'valid-token';
+
+      component.password =
+        'Secret123!';
+
+      component.fileInfo = {
+        originalName: 'document.pdf',
+        size: 4,
+        contentType: 'application/pdf',
+        expiresAt: '2026-09-30T12:00:00'
+      };
+
+
+      spyOn(
+        URL,
+        'createObjectURL'
+      ).and.returnValue(
+        'blob:test'
+      );
+
+
+      spyOn(
+        URL,
+        'revokeObjectURL'
+      );
+
+
+      const originalCreateElement =
+        document.createElement.bind(
+          document
+        );
+
+
+      const anchor =
+        originalCreateElement(
+          'a'
+        );
+
+
+      spyOn(
+        anchor,
+        'click'
+      );
+
+
+      spyOn(
+        document,
+        'createElement'
+      ).and.callFake(
+        (
+          tagName: string,
+          options?: ElementCreationOptions
+        ): HTMLElement => {
+
+          if (
+            tagName.toLowerCase()
+            === 'a'
+          ) {
+
+            return anchor;
+          }
+
+
+          return originalCreateElement(
+            tagName,
+            options
+          );
+        }
+      );
+
+
+      component.download();
+
+
+      expect(
+        fileService.downloadFile
+      ).toHaveBeenCalledWith(
+        'valid-token',
+        'Secret123!'
+      );
+
+
+      expect(
+        anchor.download
+      ).toBe(
+        'document.pdf'
+      );
+
+
+      expect(
+        anchor.click
+      ).toHaveBeenCalled();
+
+
+      expect(
+        component.downloading
+      ).toBeFalse();
+    }
+  );
+
+
+  it(
+    'should display an incorrect password message for HTTP 403',
+    () => {
+
+      fileService
+        .downloadFile
+        .and.returnValue(
+          throwError(
+            () => ({
+              status: 403
+            })
+          )
+        );
+
+
+      const component =
+        createComponent(
+          'valid-token'
+        );
+
+
+      component.token =
+        'valid-token';
+
+      component.password =
+        'WrongPassword';
+
+
+      component.download();
+
+
+      expect(
+        fileService.downloadFile
+      ).toHaveBeenCalledWith(
+        'valid-token',
+        'WrongPassword'
+      );
+
+
+      expect(
+        component.downloadErrorMessage
+      ).toBe(
+        'Mot de passe incorrect'
+      );
+
+
+      expect(
+        component.downloading
+      ).toBeFalse();
+    }
+  );
+
+
+  it(
+    'should display an expired message for HTTP 410 during download',
+    () => {
+
+      fileService
+        .downloadFile
+        .and.returnValue(
+          throwError(
+            () => ({
+              status: 410
+            })
+          )
+        );
+
+
+      const component =
+        createComponent(
+          'expired-token'
+        );
+
+
+      component.token =
+        'expired-token';
+
+      component.password =
+        'Secret123!';
+
+
+      component.download();
+
+
+      expect(
+        component.downloadErrorMessage
+      ).toBe(
+        'Ce lien de téléchargement a expiré'
+      );
+    }
+  );
+
+
+  it(
+    'should display an invalid link message for HTTP 404 during download',
+    () => {
+
+      fileService
+        .downloadFile
+        .and.returnValue(
+          throwError(
+            () => ({
+              status: 404
+            })
+          )
+        );
+
+
+      const component =
+        createComponent(
+          'invalid-token'
+        );
+
+
+      component.token =
+        'invalid-token';
+
+      component.password =
+        'Secret123!';
+
+
+      component.download();
+
+
+      expect(
+        component.downloadErrorMessage
+      ).toBe(
+        'Lien de téléchargement invalide'
+      );
+    }
+  );
+
 });

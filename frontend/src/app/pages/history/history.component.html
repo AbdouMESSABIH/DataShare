@@ -1,213 +1,312 @@
-<section
-  class="history-page"
-  aria-labelledby="history-title"
->
+<section class="history-page">
 
-  <div class="history-card">
+  <!-- =========================
+       ETAT VIDE
+       ========================= -->
 
-    <h1 id="history-title">
-      Mes fichiers
-    </h1>
+  <div
+    class="empty-space"
+    *ngIf="
+      !isLoading
+      && !errorMessage
+      && totalElements === 0
+    "
+  >
 
-
-    <p
-      *ngIf="isLoading"
-      role="status"
-      aria-live="polite"
-    >
-      Chargement...
+    <p class="empty-title">
+      Mon espace
     </p>
 
 
-    <p
-      class="error"
-      *ngIf="errorMessage"
-      role="alert"
-      aria-live="assertive"
+    <a
+      class="cloud-button"
+      routerLink="/upload"
+      aria-label="Téléverser un fichier"
     >
-      {{ errorMessage }}
-    </p>
+
+      <span class="cloud">
+        ☁
+      </span>
+
+      <span class="arrow">
+        ↑
+      </span>
+
+    </a>
 
 
-    <p
-      *ngIf="copyMessage"
-      role="status"
-      aria-live="polite"
-    >
-      {{ copyMessage }}
-    </p>
-
-
-    <p
-      *ngIf="
-        !isLoading
-        && !errorMessage
-        && totalElements === 0
-      "
-      role="status"
-      aria-live="polite"
-    >
+    <p class="empty-text">
       Aucun fichier pour le moment.
     </p>
 
+  </div>
 
-    <div
-      class="file-item"
-      *ngFor="let file of files"
-      role="group"
-      [attr.aria-label]="
-        'Fichier '
-        + file.originalName
-      "
-    >
+
+  <!-- =========================
+       CHARGEMENT
+       ========================= -->
+
+  <div
+    class="loading-card"
+    *ngIf="isLoading"
+  >
+
+    <div class="spinner"></div>
+
+    <p>
+      Chargement...
+    </p>
+
+  </div>
+
+
+  <!-- =========================
+       ERREUR
+       ========================= -->
+
+  <div
+    class="message-card error"
+    *ngIf="errorMessage"
+    role="alert"
+  >
+    {{ errorMessage }}
+  </div>
+
+
+  <!-- =========================
+       ESPACE AVEC FICHIERS
+       ========================= -->
+
+  <div
+    class="workspace"
+    *ngIf="
+      !isLoading
+      && files.length > 0
+    "
+  >
+
+    <aside class="workspace-sidebar">
+
+      <h1>
+        Mon espace
+      </h1>
+
 
       <p>
-        <strong>Nom :</strong>
-
-        {{ file.originalName }}
-      </p>
-
-
-      <p>
-        <strong>Taille :</strong>
-
-        {{ formatFileSize(file.size) }}
-      </p>
-
-
-      <p>
-        <strong>Type :</strong>
-
-        {{ file.contentType }}
-      </p>
-
-
-      <p>
-        <strong>Créé le :</strong>
-
-        {{
-          file.createdAt
-            | date:'dd/MM/yyyy HH:mm'
-        }}
-      </p>
-
-
-      <p>
-        <strong>Expire le :</strong>
-
-        {{
-          file.expiresAt
-            | date:'dd/MM/yyyy HH:mm'
-        }}
-      </p>
-
-
-      <p>
-        <strong>
-          Lien de partage :
-        </strong>
+        Mes fichiers
       </p>
 
 
       <a
-        [routerLink]="[
-          '/download',
-          file.downloadToken
-        ]"
+        class="sidebar-upload"
+        routerLink="/upload"
       >
-        {{
-          getShareUrl(
-            file.downloadToken
-          )
-        }}
+        + Téléverser
       </a>
 
 
-      <div class="actions">
+      <div class="sidebar-count">
+
+        <strong>
+          {{ totalElements }}
+        </strong>
+
+        <span>
+          fichier(s)
+        </span>
+
+      </div>
+
+    </aside>
+
+
+    <main class="workspace-content">
+
+      <div class="content-header">
+
+        <div>
+
+          <h2>
+            Mes fichiers
+          </h2>
+
+          <p>
+            Retrouvez vos liens de partage.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <p
+        class="copy-message"
+        *ngIf="copyMessage"
+        role="status"
+      >
+        {{ copyMessage }}
+      </p>
+
+
+      <div class="files-list">
+
+        <article
+          class="file-item"
+          *ngFor="let file of files"
+        >
+
+          <div class="file-main">
+
+            <strong>
+              {{ file.originalName }}
+            </strong>
+
+            <span>
+              {{ file.contentType }}
+            </span>
+
+          </div>
+
+
+          <div class="file-meta">
+
+            <div>
+
+              <span>
+                Taille
+              </span>
+
+              <strong>
+                {{
+                  formatFileSize(
+                    file.size
+                  )
+                }}
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Créé le
+              </span>
+
+              <strong>
+                {{
+                  file.createdAt
+                    | date:'dd/MM/yyyy'
+                }}
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Expire le
+              </span>
+
+              <strong>
+                {{
+                  file.expiresAt
+                    | date:'dd/MM/yyyy'
+                }}
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <a
+            class="share-link"
+            [routerLink]="[
+              '/download',
+              file.downloadToken
+            ]"
+          >
+            {{
+              getShareUrl(
+                file.downloadToken
+              )
+            }}
+          </a>
+
+
+          <div class="actions">
+
+            <button
+              class="copy-action"
+              type="button"
+              (click)="
+                copyShareLink(
+                  file.downloadToken
+                )
+              "
+            >
+              Copier
+            </button>
+
+
+            <button
+              class="delete-action"
+              type="button"
+              (click)="
+                deleteFile(
+                  file.id
+                )
+              "
+            >
+              Supprimer
+            </button>
+
+          </div>
+
+        </article>
+
+      </div>
+
+
+      <div
+        class="pagination"
+        *ngIf="totalPages > 1"
+      >
 
         <button
           type="button"
-          (click)="
-            copyShareLink(
-              file.downloadToken
-            )
+          (click)="previousPage()"
+          [disabled]="
+            !hasPreviousPage()
           "
         >
-          Copier le lien
+          Précédent
         </button>
 
 
+        <span>
+          Page
+          {{ page + 1 }}
+          sur
+          {{ totalPages }}
+        </span>
+
+
         <button
           type="button"
-          (click)="
-            deleteFile(
-              file.id
-            )
-          "
-          [attr.aria-label]="
-            'Supprimer le fichier '
-            + file.originalName
+          (click)="nextPage()"
+          [disabled]="
+            !hasNextPage()
           "
         >
-          Supprimer
+          Suivant
         </button>
 
       </div>
 
-    </div>
-
-
-    <div
-      class="pagination"
-      *ngIf="
-        !isLoading
-        && totalPages > 1
-      "
-      aria-label="Pagination"
-    >
-
-      <button
-        type="button"
-        (click)="previousPage()"
-        [disabled]="
-          !hasPreviousPage()
-        "
-      >
-        Précédent
-      </button>
-
-
-      <span>
-        Page
-        {{ page + 1 }}
-        sur
-        {{ totalPages }}
-      </span>
-
-
-      <button
-        type="button"
-        (click)="nextPage()"
-        [disabled]="
-          !hasNextPage()
-        "
-      >
-        Suivant
-      </button>
-
-    </div>
-
-
-    <p
-      *ngIf="
-        !isLoading
-        && totalElements > 0
-      "
-    >
-      Total :
-      {{ totalElements }}
-      fichier(s)
-    </p>
+    </main>
 
   </div>
 

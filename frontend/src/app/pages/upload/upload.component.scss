@@ -1,60 +1,558 @@
 .upload-page {
-  min-height: 100vh;
+  min-height:
+    calc(100vh - 76px);
+
   display: flex;
+  align-items: flex-start;
   justify-content: center;
-  align-items: center;
-  padding: 2rem;
+
+  padding:
+    105px
+    24px
+    90px;
 }
+
+.hidden-file-input {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+
+  overflow: hidden;
+
+  opacity: 0;
+
+  pointer-events: none;
+}
+
+
+/* =========================
+   Accueil téléversement
+   ========================= */
+
+.upload-home {
+  width: min(
+    600px,
+    100%
+  );
+
+  padding-top: 50px;
+
+  text-align: center;
+}
+
+.home-title {
+  margin:
+    0
+    0
+    28px;
+
+  color: var(--ds-black);
+
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.cloud-button {
+  position: relative;
+
+  width: 92px;
+  height: 92px;
+
+  margin: 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: var(--ds-white);
+  background: var(--ds-dark);
+
+  border-radius: 50%;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 20px
+    rgba(0, 0, 0, 0.18);
+
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
+}
+
+.cloud-button:hover {
+  background: var(--ds-black);
+
+  transform:
+    translateY(-3px);
+}
+
+.cloud {
+  font-size: 43px;
+  line-height: 1;
+}
+
+.arrow {
+  position: absolute;
+
+  top: 37px;
+
+  color: var(--ds-dark);
+
+  font-size: 23px;
+  font-weight: 900;
+}
+
+.home-help {
+  margin-top: 19px;
+
+  color:
+    rgba(
+      20,
+      20,
+      20,
+      0.72
+    );
+
+  font-size: 13px;
+}
+
+
+/* =========================
+   Carte
+   ========================= */
 
 .upload-card {
-  width: 100%;
-  max-width: 500px;
-  padding: 2rem;
-  border: 1px solid #ddd;
-  border-radius: 12px;
+  width: min(
+    500px,
+    100%
+  );
+
+  padding:
+    30px
+    28px;
+
+  background:
+    var(--ds-white);
+
+  border-radius: 17px;
+
+  box-shadow:
+    0 7px 18px
+    rgba(72, 31, 20, 0.18);
 }
 
-h1 {
-  margin-bottom: 1.5rem;
+.upload-card h1 {
+  margin:
+    0
+    0
+    27px;
+
+  color: var(--ds-black);
+
+  font-size: 28px;
+  font-weight: 800;
+
+  text-align: center;
 }
 
-.form-group {
+.selected-file {
+  padding: 15px;
+
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  background: #fff8f2;
+
+  border:
+    1px solid
+    #f0c39e;
+
+  border-radius: 9px;
 }
 
-input,
-select {
-  padding: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+.selected-file div {
+  min-width: 0;
+
+  display: grid;
+
+  gap: 5px;
 }
 
-button {
-  width: 100%;
-  padding: 0.8rem;
-  border: none;
-  border-radius: 6px;
+.selected-file strong {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+.selected-label {
+  color:
+    var(--ds-orange);
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.file-size {
+  flex-shrink: 0;
+
+  color:
+    var(--ds-muted);
+
+  font-size: 13px;
+}
+
+.change-file {
+  display: block;
+
+  margin:
+    11px
+    0
+    24px;
+
+  color:
+    var(--ds-orange);
+
+  font-size: 13px;
+
+  text-align: right;
+
   cursor: pointer;
 }
 
-.success {
-  margin-top: 1rem;
+
+/* =========================
+   Formulaire
+   ========================= */
+
+.form-group {
+  width: 100%;
+
+  margin-bottom: 16px;
+
+  text-align: left;
 }
 
-.error {
-  margin-top: 1rem;
-}
-
-.result {
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid #ddd;
-}
-
-code {
+.form-group label {
   display: block;
+
+  margin-bottom: 8px;
+
+  color:
+    var(--ds-text);
+
+  font-size: 15px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  height: 44px;
+
+  box-sizing: border-box;
+
+  padding:
+    0
+    13px;
+
+  color:
+    var(--ds-text);
+
+  background:
+    var(--ds-white);
+
+  border:
+    1px solid
+    var(--ds-border);
+
+  border-radius: 8px;
+
+  font-family: inherit;
+  font-size: 15px;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.form-group input::placeholder {
+  color:
+    #aaaaaa;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color:
+    var(--ds-orange);
+
+  outline: none;
+
+  box-shadow:
+    0 0 0 2px
+    rgba(226, 127, 41, 0.12);
+}
+
+.format-help {
+  margin:
+    4px
+    0
+    22px;
+
+  color:
+    var(--ds-muted);
+
+  font-size: 12px;
+}
+
+
+/* =========================
+   Boutons
+   ========================= */
+
+.upload-button,
+.copy-button,
+.another-button {
+  width: 100%;
+  min-height: 42px;
+
+  box-sizing: border-box;
+
+  border-radius: 8px;
+
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+.upload-button {
+  color:
+    var(--ds-orange);
+
+  background:
+    #fff4ea;
+
+  border:
+    1px solid
+    var(--ds-orange);
+}
+
+.upload-button:hover {
+  color:
+    var(--ds-white);
+
+  background:
+    var(--ds-orange);
+}
+
+
+/* =========================
+   Erreur
+   ========================= */
+
+.error-message {
+  margin:
+    18px
+    0
+    0;
+
+  padding:
+    11px
+    13px;
+
+  color:
+    var(--ds-error);
+
+  background:
+    var(--ds-error-bg);
+
+  border-radius: 8px;
+
+  font-size: 14px;
+
+  text-align: center;
+}
+
+
+/* =========================
+   Résultat
+   ========================= */
+
+.result-card {
+  text-align: center;
+}
+
+.success-icon {
+  width: 48px;
+  height: 48px;
+
+  margin:
+    0
+    auto
+    15px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color:
+    var(--ds-white);
+
+  background:
+    var(--ds-success);
+
+  border-radius: 50%;
+
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.result-name {
+  margin:
+    0
+    0
+    8px;
+
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.result-meta {
+  display: flex;
+  justify-content: center;
+
+  gap: 15px;
+
+  color:
+    var(--ds-muted);
+
+  font-size: 12px;
+}
+
+.share-title {
+  margin:
+    25px
+    0
+    8px;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.share-link {
+  display: block;
+
+  margin-bottom: 17px;
+
+  color:
+    var(--ds-orange);
+
+  font-size: 13px;
+
   overflow-wrap: anywhere;
+}
+
+.copy-button {
+  color:
+    var(--ds-white);
+
+  background:
+    var(--ds-dark);
+
+  border: 0;
+}
+
+.copy-button:hover {
+  background:
+    var(--ds-black);
+}
+
+.another-button {
+  margin-top: 10px;
+
+  color:
+    var(--ds-orange);
+
+  background:
+    var(--ds-white);
+
+  border:
+    1px solid
+    var(--ds-orange);
+}
+
+.copy-message {
+  margin:
+    12px
+    0
+    0;
+
+  color:
+    var(--ds-muted);
+
+  font-size: 12px;
+}
+
+
+/* =========================
+   Mobile
+   ========================= */
+
+@media (max-width: 600px) {
+
+  .upload-page {
+    min-height:
+      calc(100vh - 72px);
+
+    padding:
+      85px
+      24px
+      70px;
+  }
+
+  .upload-home {
+    padding-top: 35px;
+  }
+
+  .home-title {
+    font-size: 18px;
+  }
+
+  .cloud-button {
+    width: 80px;
+    height: 80px;
+  }
+
+  .cloud {
+    font-size: 38px;
+  }
+
+  .arrow {
+    top: 32px;
+
+    font-size: 20px;
+  }
+
+  .upload-card {
+    padding:
+      27px
+      24px;
+  }
+
+  .upload-card h1 {
+    font-size: 26px;
+  }
+
+  .result-meta {
+    flex-direction: column;
+
+    gap: 4px;
+  }
 }

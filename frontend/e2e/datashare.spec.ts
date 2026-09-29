@@ -1,258 +1,447 @@
-import { test, expect } from '@playwright/test';
-
-test('parcours complet DataShare', async ({ page }) => {
-
-    const email =
-        `e2e-${Date.now()}@test.com`;
-
-    const password =
-        'Password123';
-
-    const fileName =
-        'e2e-test.txt';
-
-    const fileContent =
-        'Test E2E DataShare';
+import {
+    test,
+    expect
+} from '@playwright/test';
 
 
-    // ----------------------------------------
-    // 1. Création du compte
-    // ----------------------------------------
-
-    await page.goto('/register');
-
-    await page
-        .locator('input[type="email"]')
-        .fill(email);
-
-    const registerPasswordInputs =
-        page.locator('input[type="password"]');
-
-    for (
-        let i = 0;
-        i < await registerPasswordInputs.count();
-        i++
-    ) {
-
-        await registerPasswordInputs
-            .nth(i)
-            .fill(password);
-    }
+test.setTimeout(
+    60_000
+);
 
 
-    const registerResponsePromise =
-        page.waitForResponse(
-            response =>
-                response.url().includes('/api/auth/register')
-                && response.request().method() === 'POST'
+test(
+    'parcours complet DataShare avec fichier protégé par mot de passe',
+    async ({ page }) => {
+
+        const email =
+            `e2e-${Date.now()}@test.com`;
+
+        const accountPassword =
+            'Password123';
+
+        const filePassword =
+            'SecretFile123!';
+
+        const fileName =
+            'e2e-test.txt';
+
+        const fileContent =
+            'Test E2E DataShare';
+
+
+        // ----------------------------------------
+        // 1. Création du compte
+        // ----------------------------------------
+
+        await page.goto(
+            '/register'
         );
 
 
-    await page
-        .locator('button[type="submit"]')
-        .click();
+        await page
+            .locator(
+                'input[type="email"]'
+            )
+            .fill(
+                email
+            );
 
 
-    const registerResponse =
-        await registerResponsePromise;
+        const registerPasswordInputs =
+            page.locator(
+                'input[type="password"]'
+            );
 
 
-    expect(
-        registerResponse.status()
-    ).toBe(201);
+        for (
+            let i = 0;
+            i <
+            await registerPasswordInputs.count();
+            i++
+        ) {
 
-
-    // ----------------------------------------
-    // 2. Connexion
-    // ----------------------------------------
-
-    await page.goto('/login');
-
-    await page
-        .locator('input[type="email"]')
-        .fill(email);
-
-    await page
-        .locator('input[type="password"]')
-        .fill(password);
-
-
-    const loginResponsePromise =
-        page.waitForResponse(
-            response =>
-                response.url().includes('/api/auth/login')
-                && response.request().method() === 'POST'
-        );
-
-
-    await page
-        .locator('button[type="submit"]')
-        .click();
-
-
-    const loginResponse =
-        await loginResponsePromise;
-
-
-    expect(
-        loginResponse.status()
-    ).toBe(200);
-
-
-    const token =
-        await page.evaluate(
-            () => localStorage.getItem('token')
-        );
-
-
-    expect(token).not.toBeNull();
-
-
-    // ----------------------------------------
-    // 3. Upload
-    // ----------------------------------------
-
-    await page.goto('/upload');
-
-
-    await page
-        .locator('input[type="file"]')
-        .setInputFiles({
-            name: fileName,
-            mimeType: 'text/plain',
-            buffer: Buffer.from(fileContent)
-        });
-
-
-    const uploadResponsePromise =
-        page.waitForResponse(
-            response =>
-                response.url().includes('/api/files/upload')
-                && response.request().method() === 'POST'
-        );
-
-
-    await page
-        .locator('button[type="submit"]')
-        .click();
-
-
-    const uploadResponse =
-        await uploadResponsePromise;
-
-
-    expect(
-        uploadResponse.status()
-    ).toBe(201);
-
-
-    const uploadResult =
-        await uploadResponse.json();
-
-
-    expect(
-        uploadResult.downloadToken
-    ).toBeTruthy();
-
-
-    // ----------------------------------------
-    // 4. Historique
-    // ----------------------------------------
-
-    await page.goto('/history');
-
-
-    await expect(
-        page.getByText(fileName)
-    ).toBeVisible();
-
-
-    // ----------------------------------------
-    // 5. Page de partage / téléchargement
-    // ----------------------------------------
-
-    await page.goto(
-        `/download/${uploadResult.downloadToken}`
-    );
-
-
-    await expect(
-        page.getByText(fileName)
-    ).toBeVisible();
-
-
-    // ----------------------------------------
-    // 6. Téléchargement réel
-    // ----------------------------------------
-
-    const downloadPromise =
-        page.waitForEvent('download');
-
-
-    await page
-        .locator('a[href$="/file"]')
-        .click();
-
-
-    const download =
-        await downloadPromise;
-
-
-    expect(
-        download.suggestedFilename()
-    ).toBe(fileName);
-
-
-    // ----------------------------------------
-    // 7. Suppression
-    // ----------------------------------------
-
-    await page.goto('/history');
-
-
-    page.once(
-        'dialog',
-        async dialog => {
-
-            await dialog.accept();
+            await registerPasswordInputs
+                .nth(i)
+                .fill(
+                    accountPassword
+                );
         }
-    );
 
 
-    const deleteResponsePromise =
-        page.waitForResponse(
-            response =>
-                response.url().includes('/api/files/')
-                && response.request().method() === 'DELETE'
+        const registerResponsePromise =
+            page.waitForResponse(
+                response =>
+                    response
+                        .url()
+                        .includes(
+                            '/api/auth/register'
+                        )
+                    &&
+                    response
+                        .request()
+                        .method()
+                    === 'POST'
+            );
+
+
+        await page
+            .locator(
+                'button[type="submit"]'
+            )
+            .click();
+
+
+        const registerResponse =
+            await registerResponsePromise;
+
+
+        expect(
+            registerResponse.status()
+        ).toBe(
+            201
         );
 
 
-    await page
-        .getByRole(
-            'button',
-            { name: 'Supprimer' }
-        )
-        .click();
+        // ----------------------------------------
+        // 2. Connexion
+        // ----------------------------------------
+
+        await page.goto(
+            '/login'
+        );
 
 
-    const deleteResponse =
-        await deleteResponsePromise;
+        await page
+            .locator(
+                'input[type="email"]'
+            )
+            .fill(
+                email
+            );
 
 
-    expect(
-        deleteResponse.status()
-    ).toBe(204);
+        await page
+            .locator(
+                'input[type="password"]'
+            )
+            .fill(
+                accountPassword
+            );
 
 
-    await expect(
-        page.getByText(fileName)
-    ).not.toBeVisible();
+        const loginResponsePromise =
+            page.waitForResponse(
+                response =>
+                    response
+                        .url()
+                        .includes(
+                            '/api/auth/login'
+                        )
+                    &&
+                    response
+                        .request()
+                        .method()
+                    === 'POST'
+            );
 
 
-    await expect(
-        page.getByText('Aucun fichier pour le moment.')
-    ).toBeVisible();
-});
+        await page
+            .locator(
+                'button[type="submit"]'
+            )
+            .click();
+
+
+        const loginResponse =
+            await loginResponsePromise;
+
+
+        expect(
+            loginResponse.status()
+        ).toBe(
+            200
+        );
+
+
+        const jwtToken =
+            await page.evaluate(
+                () =>
+                    localStorage.getItem(
+                        'token'
+                    )
+            );
+
+
+        expect(
+            jwtToken
+        ).not.toBeNull();
+
+
+        // ----------------------------------------
+        // 3. Upload du fichier protégé
+        // ----------------------------------------
+
+        await page.goto(
+            '/upload'
+        );
+
+
+        await page
+            .locator(
+                'input[type="file"]'
+            )
+            .setInputFiles({
+                name:
+                    fileName,
+
+                mimeType:
+                    'text/plain',
+
+                buffer:
+                    Buffer.from(
+                        fileContent
+                    )
+            });
+
+
+        await page
+            .locator(
+                '#password'
+            )
+            .fill(
+                filePassword
+            );
+
+
+        const uploadResponsePromise =
+            page.waitForResponse(
+                response =>
+                    response
+                        .url()
+                        .includes(
+                            '/api/files/upload'
+                        )
+                    &&
+                    response
+                        .request()
+                        .method()
+                    === 'POST'
+            );
+
+
+        await page
+            .locator(
+                'button[type="submit"]'
+            )
+            .click();
+
+
+        const uploadResponse =
+            await uploadResponsePromise;
+
+
+        expect(
+            uploadResponse.status()
+        ).toBe(
+            201
+        );
+
+
+        const uploadResult =
+            await uploadResponse.json();
+
+
+        expect(
+            uploadResult.downloadToken
+        ).toBeTruthy();
+
+
+        // ----------------------------------------
+        // 4. Historique
+        // ----------------------------------------
+
+        await page.goto(
+            '/history'
+        );
+
+
+        await expect(
+            page.getByText(
+                fileName
+            )
+        ).toBeVisible();
+
+
+        // ----------------------------------------
+        // 5. Page de téléchargement
+        // ----------------------------------------
+
+        await page.goto(
+            `/download/${uploadResult.downloadToken}`
+        );
+
+
+        await expect(
+            page.getByText(
+                fileName
+            )
+        ).toBeVisible();
+
+
+        await expect(
+            page.locator(
+                '#downloadPassword'
+            )
+        ).toBeVisible();
+
+
+        // ----------------------------------------
+        // 6. Mauvais mot de passe
+        //
+        // Ici on teste le comportement visible
+        // pour l'utilisateur.
+        // ----------------------------------------
+
+        await page
+            .locator(
+                '#downloadPassword'
+            )
+            .fill(
+                'MauvaisMotDePasse'
+            );
+
+
+        await page
+            .getByRole(
+                'button',
+                {
+                    name:
+                        'Télécharger le fichier'
+                }
+            )
+            .click();
+
+
+        await expect(
+            page.getByText(
+                'Mot de passe incorrect'
+            )
+        ).toBeVisible();
+
+
+        // ----------------------------------------
+        // 7. Bon mot de passe
+        //    + téléchargement réel
+        // ----------------------------------------
+
+        await page
+            .locator(
+                '#downloadPassword'
+            )
+            .fill(
+                filePassword
+            );
+
+
+        const downloadPromise =
+            page.waitForEvent(
+                'download'
+            );
+
+
+        await page
+            .getByRole(
+                'button',
+                {
+                    name:
+                        'Télécharger le fichier'
+                }
+            )
+            .click();
+
+
+        const download =
+            await downloadPromise;
+
+
+        expect(
+            download.suggestedFilename()
+        ).toBe(
+            fileName
+        );
+
+
+        // ----------------------------------------
+        // 8. Suppression
+        // ----------------------------------------
+
+        await page.goto(
+            '/history'
+        );
+
+
+        page.once(
+            'dialog',
+
+            async dialog => {
+
+                await dialog.accept();
+            }
+        );
+
+
+        const deleteResponsePromise =
+            page.waitForResponse(
+                response =>
+                    response
+                        .url()
+                        .includes(
+                            '/api/files/'
+                        )
+                    &&
+                    response
+                        .request()
+                        .method()
+                    === 'DELETE'
+            );
+
+
+        await page
+            .getByRole(
+                'button',
+                {
+                    name:
+                        'Supprimer'
+                }
+            )
+            .click();
+
+
+        const deleteResponse =
+            await deleteResponsePromise;
+
+
+        expect(
+            deleteResponse.status()
+        ).toBe(
+            204
+        );
+
+
+        await expect(
+            page.getByText(
+                fileName
+            )
+        ).not.toBeVisible();
+
+
+        await expect(
+            page.getByText(
+                'Aucun fichier pour le moment.'
+            )
+        ).toBeVisible();
+    }
+);
 
 
 test(
@@ -267,40 +456,64 @@ test(
 
 
         // ----------------------------------------
-        // Création préalable d'un compte valide
+        // Création d'un compte valide
         // ----------------------------------------
 
-        await page.goto('/register');
+        await page.goto(
+            '/register'
+        );
+
 
         await page
-            .locator('input[type="email"]')
-            .fill(email);
+            .locator(
+                'input[type="email"]'
+            )
+            .fill(
+                email
+            );
+
 
         const registerPasswordInputs =
-            page.locator('input[type="password"]');
+            page.locator(
+                'input[type="password"]'
+            );
+
 
         for (
             let i = 0;
-            i < await registerPasswordInputs.count();
+            i <
+            await registerPasswordInputs.count();
             i++
         ) {
 
             await registerPasswordInputs
                 .nth(i)
-                .fill(password);
+                .fill(
+                    password
+                );
         }
 
 
         const registerResponsePromise =
             page.waitForResponse(
                 response =>
-                    response.url().includes('/api/auth/register')
-                    && response.request().method() === 'POST'
+                    response
+                        .url()
+                        .includes(
+                            '/api/auth/register'
+                        )
+                    &&
+                    response
+                        .request()
+                        .method()
+                    === 'POST'
             );
 
 
         await page
-            .locator('button[type="submit"]')
+            .locator(
+                'button[type="submit"]'
+            )
             .click();
 
 
@@ -310,34 +523,58 @@ test(
 
         expect(
             registerResponse.status()
-        ).toBe(201);
+        ).toBe(
+            201
+        );
 
 
         // ----------------------------------------
-        // Tentative avec mauvais mot de passe
+        // Mauvais mot de passe utilisateur
         // ----------------------------------------
 
-        await page.goto('/login');
+        await page.goto(
+            '/login'
+        );
+
 
         await page
-            .locator('input[type="email"]')
-            .fill(email);
+            .locator(
+                'input[type="email"]'
+            )
+            .fill(
+                email
+            );
+
 
         await page
-            .locator('input[type="password"]')
-            .fill('MauvaisMotDePasse123');
+            .locator(
+                'input[type="password"]'
+            )
+            .fill(
+                'MauvaisMotDePasse123'
+            );
 
 
         const loginResponsePromise =
             page.waitForResponse(
                 response =>
-                    response.url().includes('/api/auth/login')
-                    && response.request().method() === 'POST'
+                    response
+                        .url()
+                        .includes(
+                            '/api/auth/login'
+                        )
+                    &&
+                    response
+                        .request()
+                        .method()
+                    === 'POST'
             );
 
 
         await page
-            .locator('button[type="submit"]')
+            .locator(
+                'button[type="submit"]'
+            )
             .click();
 
 
@@ -347,7 +584,9 @@ test(
 
         expect(
             loginResponse.status()
-        ).toBe(401);
+        ).toBe(
+            401
+        );
 
 
         await expect(
@@ -359,11 +598,16 @@ test(
 
         const token =
             await page.evaluate(
-                () => localStorage.getItem('token')
+                () =>
+                    localStorage.getItem(
+                        'token'
+                    )
             );
 
 
-        expect(token).toBeNull();
+        expect(
+            token
+        ).toBeNull();
     }
 );
 
@@ -379,10 +623,16 @@ test(
         const responsePromise =
             page.waitForResponse(
                 response =>
-                    response.url().includes(
-                        `/api/download/${invalidToken}`
-                    )
-                    && response.request().method() === 'GET'
+                    response
+                        .url()
+                        .includes(
+                            `/api/download/${invalidToken}`
+                        )
+                    &&
+                    response
+                        .request()
+                        .method()
+                    === 'GET'
             );
 
 
@@ -397,7 +647,9 @@ test(
 
         expect(
             response.status()
-        ).toBe(404);
+        ).toBe(
+            404
+        );
 
 
         await expect(

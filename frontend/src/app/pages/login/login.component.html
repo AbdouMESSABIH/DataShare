@@ -2,11 +2,9 @@
 
   <div class="login-card">
 
-    <h1 id="login-title">Se connecter</h1>
-
-    <p>
-      Connectez-vous à votre compte DataShare.
-    </p>
+    <h1 id="login-title">
+      Se connecter
+    </h1>
 
     <form
       #loginForm="ngForm"
@@ -17,7 +15,7 @@
       <div class="form-group">
 
         <label for="email">
-          Adresse email
+          Email
         </label>
 
         <input
@@ -29,18 +27,19 @@
           required
           email
           autocomplete="email"
-          placeholder="exemple@email.com"
-          [attr.aria-invalid]="emailInput.invalid && emailInput.touched"
-          [attr.aria-describedby]="
-            emailInput.invalid && emailInput.touched
-              ? 'email-error'
-              : null
+          placeholder="Saisissez votre email..."
+          [attr.aria-invalid]="
+            emailInput.invalid
+            && emailInput.touched
           "
         >
 
         <p
-          id="email-error"
-          *ngIf="emailInput.invalid && emailInput.touched"
+          class="field-error"
+          *ngIf="
+            emailInput.invalid
+            && emailInput.touched
+          "
           role="alert"
         >
           Veuillez saisir une adresse email valide.
@@ -63,19 +62,15 @@
           #passwordInput="ngModel"
           required
           autocomplete="current-password"
-          placeholder="Votre mot de passe"
+          placeholder="Saisissez votre mot de passe..."
           [attr.aria-invalid]="
-            passwordInput.invalid && passwordInput.touched
-          "
-          [attr.aria-describedby]="
-            passwordInput.invalid && passwordInput.touched
-              ? 'password-error'
-              : null
+            passwordInput.invalid
+            && passwordInput.touched
           "
         >
 
         <p
-          id="password-error"
+          class="field-error"
           *ngIf="
             passwordInput.errors?.['required']
             && passwordInput.touched
@@ -88,7 +83,16 @@
       </div>
 
 
+      <a
+        class="switch-link"
+        href="/register"
+      >
+        Je n'ai pas encore de compte
+      </a>
+
+
       <button
+        class="submit-button"
         type="submit"
         [disabled]="loginForm.invalid"
       >
@@ -99,6 +103,7 @@
 
 
     <p
+      class="success-message"
       *ngIf="message"
       role="status"
       aria-live="polite"
@@ -108,6 +113,7 @@
 
 
     <p
+      class="error-message"
       *ngIf="errorMessage"
       role="alert"
       aria-live="assertive"

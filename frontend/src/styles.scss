@@ -1,138 +1,72 @@
-/* =========================
-   Contenu des pages DataShare
-   ========================= */
+:root {
+  --ds-orange: #e27f29;
+  --ds-orange-dark: #c96517;
+  --ds-peach: #ffad82;
+  --ds-coral: #e96b68;
 
-.app-content h1 {
-    margin-top: 0;
-    margin-bottom: 25px;
+  --ds-dark: #303030;
+  --ds-black: #111111;
 
-    font-size: 27px;
-    font-weight: 800;
+  --ds-white: #ffffff;
+  --ds-text: #292929;
+  --ds-muted: #777777;
 
-    color: #123b67;
+  --ds-border: #dddddd;
+
+  --ds-error: #b42318;
+  --ds-error-bg: #fff0ef;
+
+  --ds-success: #247a42;
+  --ds-success-bg: #edf9f0;
 }
 
-.app-content h2 {
-    margin-top: 0;
-    margin-bottom: 24px;
-
-    font-size: 25px;
-    font-weight: 800;
-
-    color: #123b67;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-.app-content h3 {
-    font-size: 23px;
-    font-weight: 700;
-
-    color: #123b67;
+html,
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100%;
 }
 
+body {
+  min-height: 100vh;
 
-/* Textes */
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
 
-.app-content p {
-    font-size: 21px;
-    line-height: 1.5;
+  color: var(--ds-text);
+
+  background:
+    linear-gradient(
+      180deg,
+      var(--ds-peach) 0%,
+      #f38a74 50%,
+      var(--ds-coral) 100%
+    );
 }
 
-
-/* Labels */
-
-.app-content label {
-    display: block;
-
-    margin-bottom: 9px;
-
-    font-size: 21px;
-    font-weight: 600;
-
-    color: #1d3553;
+button,
+input,
+select {
+  font: inherit;
 }
 
-
-/* Inputs */
-
-.app-content input,
-.app-content select {
-    box-sizing: border-box;
-
-    min-height: 55px;
-    padding: 11px 15px;
-
-    font-size: 20px;
-
-    border: 1px solid #c5d2df;
-    border-radius: 9px;
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
 }
 
-
-/* Boutons */
-
-.app-content button {
-    min-height: 58px;
-    padding: 13px 25px;
-
-    font-size: 23px;
-    font-weight: 700;
-
-    border-radius: 10px;
-
-    cursor: pointer;
-}
-
-
-/* Liens à l'intérieur des pages */
-
-.app-content a {
-    font-size: 21px;
-}
-
-
-/* =========================
-   Remonter les composants
-   ========================= */
-
-app-upload,
-app-login,
-app-register,
-app-history {
-    display: block;
-
-    /*
-       Empêche le composant d'être artificiellement
-       descendu par rapport au haut de la page.
-    */
-    margin-top: 0;
-}
-
-
-/* =========================
-   Responsive
-   ========================= */
-
-@media (max-width: 760px) {
-
-    .app-content h1,
-    .app-content h2 {
-        font-size: 23px;
-    }
-
-    .app-content label,
-    .app-content p,
-    .app-content a {
-        font-size: 18px;
-    }
-
-    .app-content input,
-    .app-content select {
-        min-height: 50px;
-        font-size: 18px;
-    }
-
-    .app-content button {
-        min-height: 52px;
-        font-size: 19px;
-    }
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(226, 127, 41, 0.28);
+  outline-offset: 3px;
 }

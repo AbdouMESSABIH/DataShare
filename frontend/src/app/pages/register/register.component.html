@@ -2,16 +2,20 @@
 
   <div class="register-card">
 
-    <h1>Créer un compte</h1>
+    <h1>
+      Créer un compte
+    </h1>
 
-    <p>
-      Créez votre compte DataShare pour partager vos fichiers.
-    </p>
-
-    <form #registerForm="ngForm" (ngSubmit)="onSubmit()">
+    <form
+      #registerForm="ngForm"
+      (ngSubmit)="onSubmit()"
+    >
 
       <div class="form-group">
-        <label for="email">Adresse email</label>
+
+        <label for="email">
+          Email
+        </label>
 
         <input
           id="email"
@@ -21,16 +25,28 @@
           #emailInput="ngModel"
           required
           email
-          placeholder="exemple@email.com"
+          autocomplete="email"
+          placeholder="Saisissez votre email..."
         >
 
-        <p *ngIf="emailInput.invalid && emailInput.touched">
+        <p
+          class="field-error"
+          *ngIf="
+            emailInput.invalid
+            && emailInput.touched
+          "
+        >
           Veuillez saisir une adresse email valide.
         </p>
+
       </div>
 
+
       <div class="form-group">
-        <label for="password">Mot de passe</label>
+
+        <label for="password">
+          Mot de passe
+        </label>
 
         <input
           id="password"
@@ -40,32 +56,90 @@
           #passwordInput="ngModel"
           required
           minlength="8"
-          placeholder="Au moins 8 caractères"
+          autocomplete="new-password"
+          placeholder="Saisissez votre mot de passe..."
         >
 
-        <p *ngIf="passwordInput.errors?.['required'] && passwordInput.touched">
-          Le mot de passe est obligatoire.
+        <p
+          class="field-error"
+          *ngIf="
+            passwordInput.errors?.['minlength']
+            && passwordInput.touched
+          "
+        >
+          Au moins 8 caractères sont nécessaires.
         </p>
 
-        <p *ngIf="passwordInput.errors?.['minlength'] && passwordInput.touched">
-          Le mot de passe doit contenir au moins 8 caractères.
-        </p>
       </div>
 
+
+      <div class="form-group">
+
+        <label for="passwordConfirmation">
+          Verification du mot de passe
+        </label>
+
+        <input
+          id="passwordConfirmation"
+          type="password"
+          name="passwordConfirmation"
+          [(ngModel)]="passwordConfirmation"
+          #passwordConfirmationInput="ngModel"
+          required
+          autocomplete="new-password"
+          placeholder="Saisissez le à nouveau"
+        >
+
+        <p
+          class="field-error"
+          *ngIf="
+            passwordConfirmationInput.touched
+            && passwordConfirmation
+            && password !== passwordConfirmation
+          "
+        >
+          Les mots de passe ne correspondent pas.
+        </p>
+
+      </div>
+
+
+      <a
+        class="switch-link"
+        href="/login"
+      >
+        J'ai déjà un compte
+      </a>
+
+
       <button
+        class="submit-button"
         type="submit"
-        [disabled]="registerForm.invalid"
+        [disabled]="
+          registerForm.invalid
+          || password !== passwordConfirmation
+        "
       >
         Créer mon compte
       </button>
 
     </form>
 
-    <p *ngIf="message">
+
+    <p
+      class="success-message"
+      *ngIf="message"
+      role="status"
+    >
       {{ message }}
     </p>
 
-    <p *ngIf="errorMessage">
+
+    <p
+      class="error-message"
+      *ngIf="errorMessage"
+      role="alert"
+    >
       {{ errorMessage }}
     </p>
 
