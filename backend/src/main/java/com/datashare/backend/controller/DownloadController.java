@@ -1,5 +1,6 @@
 package com.datashare.backend.controller;
 
+import com.datashare.backend.dto.DownloadInfoResponse;
 import com.datashare.backend.entity.StoredFile;
 import com.datashare.backend.service.FileService;
 
@@ -8,6 +9,7 @@ import org.springframework.core.io.Resource;
 
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
@@ -19,9 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 
 @RestController
@@ -41,7 +40,7 @@ public class DownloadController {
 
 
     @GetMapping("/{token}")
-    public ResponseEntity<Map<String, Object>>
+    public ResponseEntity<DownloadInfoResponse>
     getDownloadInfo(
             @PathVariable String token
     ) {
@@ -53,29 +52,20 @@ public class DownloadController {
                         );
 
 
-        Map<String, Object> response =
-                new LinkedHashMap<>();
+        DownloadInfoResponse response =
+                new DownloadInfoResponse(
+                        storedFile
+                                .getOriginalName(),
 
+                        storedFile
+                                .getSize(),
 
-        response.put(
-                "originalName",
-                storedFile.getOriginalName()
-        );
+                        storedFile
+                                .getContentType(),
 
-        response.put(
-                "size",
-                storedFile.getSize()
-        );
-
-        response.put(
-                "contentType",
-                storedFile.getContentType()
-        );
-
-        response.put(
-                "expiresAt",
-                storedFile.getExpiresAt()
-        );
+                        storedFile
+                                .getExpiresAt()
+                );
 
 
         return ResponseEntity.ok(
@@ -123,28 +113,69 @@ public class DownloadController {
                         .filename(
                                 storedFile
                                         .getOriginalName(),
+
                                 StandardCharsets.UTF_8
                         )
                         .build();
 
 
+        MediaType mediaType =
+                resolveMediaType(
+                        storedFile
+                                .getContentType()
+                );
+
+
         return ResponseEntity
                 .ok()
+
                 .contentType(
-                        MediaType.parseMediaType(
-                                storedFile
-                                        .getContentType()
-                        )
+                        mediaType
                 )
+
                 .contentLength(
-                        storedFile.getSize()
+                        storedFile
+                                .getSize()
                 )
+
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
                         disposition.toString()
                 )
+
                 .body(
                         resource
                 );
+    }
+
+
+    private MediaType resolveMediaType(
+            String contentType
+    ) {
+
+        if (
+                contentType == null
+                || contentType.isBlank()
+        ) {
+
+            return MediaType
+                    .APPLICATION_OCTET_STREAM;
+        }
+
+
+        try {
+
+            return MediaType
+                    .parseMediaType(
+                            contentType
+                    );
+
+        } catch (
+                InvalidMediaTypeException exception
+        ) {
+
+            return MediaType
+                    .APPLICATION_OCTET_STREAM;
+        }
     }
 }
