@@ -1,33 +1,102 @@
 # Rapports de tests et de couverture - DataShare
 
-Ce dossier contient les rapports générés lors de la validation finale du backend DataShare.
+Ce dossier regroupe les rapports générés lors des validations du backend DataShare.
 
-## Rapports de tests
+Les valeurs présentées correspondent à la dernière validation finale documentée du projet.
 
-Le dossier `backend-tests/` contient les résultats générés par Maven Surefire.
+## Rapports de tests backend
 
-Ces rapports correspondent aux tests unitaires et aux tests d'intégration du backend.
+Les résultats Maven Surefire concernent les tests unitaires et les tests d'intégration du backend.
 
-Lors de la validation finale :
+Dernière validation :
 
-- 22 tests exécutés
-- 0 échec
-- 0 erreur
-- 0 test ignoré
+```text
+Tests run: 41
+Failures: 0
+Errors: 0
+Skipped: 0
+BUILD SUCCESS
+```
 
-## Rapports de couverture
+La commande utilisée est :
 
-Le dossier `coverage/` contient les rapports générés par JaCoCo :
+```bash
+cd backend
+source ~/.config/datashare/env
+./mvnw clean test
+```
 
-- `jacoco.csv` : résultats de couverture au format CSV
-- `jacoco.xml` : résultats de couverture au format XML
+## Couverture JaCoCo
 
-Résultats obtenus lors de la validation finale :
+La couverture est générée avec :
 
-- couverture des instructions : 80 %
-- couverture des branches : 73 %
+```bash
+cd backend
+source ~/.config/datashare/env
+./mvnw clean test jacoco:report
+```
+
+Résultats finaux :
+
+```text
+Instructions : 89,01 % (1515 / 1702)
+Branches     : 67,19 % (86 / 128)
+Lignes       : 90,56 % (547 / 604)
+```
 
 Le rapport HTML complet est généré localement dans :
 
 ```text
 backend/target/site/jacoco/index.html
+```
+
+Selon les rapports conservés dans ce dossier, des exports peuvent également être présents sous forme :
+
+```text
+jacoco.csv
+jacoco.xml
+```
+
+## Analyse SpotBugs
+
+Dernière validation :
+
+```text
+BugInstance size is 0
+Error size is 0
+No errors/warnings found
+BUILD SUCCESS
+```
+
+Commande :
+
+```bash
+cd backend
+./mvnw spotbugs:check
+```
+
+## Autres validations du projet
+
+Les autres résultats sont documentés dans les fichiers principaux du dépôt :
+
+```text
+TESTING.md
+PERF.md
+SECURITY.md
+```
+
+État global documenté :
+
+```text
+Backend JUnit    : 41 / 41
+Frontend Angular : 27 / 27
+Playwright       : 3 / 3
+ESLint           : succès
+SpotBugs         : 0 bug / 0 erreur
+```
+
+## Important
+
+Les fichiers de rapport générés automatiquement peuvent être recréés.
+
+La source de vérité pour les résultats finaux et leur interprétation reste la documentation versionnée du projet.

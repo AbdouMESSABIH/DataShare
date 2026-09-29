@@ -1,72 +1,61 @@
 # Procédures de maintenance - DataShare
 
-## Objectif
+## 1. Objectif
 
 Ce document décrit les principales procédures de maintenance de DataShare.
 
-Il permet de :
+Les objectifs sont de pouvoir :
 
 - vérifier l'état de l'application ;
 - diagnostiquer un incident ;
 - consulter les logs ;
-- appliquer une correction ;
-- vérifier qu'une modification n'introduit pas de régression ;
+- corriger un défaut ;
+- vérifier la non-régression ;
 - contrôler la sécurité ;
-- surveiller les performances ;
+- suivre les performances ;
 - maintenir les dépendances ;
-- maintenir PostgreSQL et le stockage local.
+- maintenir PostgreSQL et le stockage local ;
+- contrôler les migrations Flyway.
 
 ---
 
-## 1. Vérification de l'état de l'application
-
-Avant toute intervention, vérifier que les différents composants sont
-correctement démarrés.
-
-### Backend
-
-Le backend Spring Boot doit être disponible sur :
+## 2. Architecture à garder en tête
 
 ```text
-http://localhost:8080
+Utilisateur
+    │
+    ▼
+Frontend Angular
+    │
+    │ API REST / JSON
+    ▼
+Backend Spring Boot
+    │
+    ├── PostgreSQL
+    │
+    └── stockage local
 ```
 
-Variables d'environnement nécessaires :
-
-```bash
-export DB_PASSWORD='votre_mot_de_passe_postgresql'
-export JWT_SECRET='votre_secret_jwt'
-```
-
-Commande de démarrage :
-
-```bash
-cd ~/Projets/DataShare/backend
-./mvnw spring-boot:run
-```
-
-Ces variables doivent être redéfinies dans chaque nouveau terminal.
-
----
-
-### Frontend
-
-Le frontend Angular doit être disponible sur :
+Architecture backend :
 
 ```text
-http://localhost:4200
+Controller
+    │
+    ▼
+Service
+    │
+    ▼
+Repository
+    │
+    ▼
+PostgreSQL / stockage local
 ```
 
-Commande de démarrage :
-
-```bash
-cd ~/Projets/DataShare/frontend
-npm start
-```
+Lors d'un incident, cette séparation permet d'identifier plus facilement la couche concernée.
 
 ---
 
-### PostgreSQL
+## 3. Vérification de PostgreSQL
 
 Vérifier l'état du service :
 
@@ -74,7 +63,7 @@ Vérifier l'état du service :
 systemctl status postgresql
 ```
 
-Si nécessaire, démarrer PostgreSQL :
+Démarrer PostgreSQL si nécessaire :
 
 ```bash
 sudo systemctl start postgresql
@@ -86,31 +75,105 @@ La base utilisée par DataShare est :
 datashare
 ```
 
+Vérifier l'accès :
+
+```bash
+sudo -u postgres psql -d datashare
+```
+
+Quitter PostgreSQL :
+
+```text
+\q
+```
+
 ---
 
-## 2. Consultation des logs
+## 4. Variables d'environnement
 
-Le backend produit des logs structurés au format JSON.
+Le backend utilise notamment :
 
-Le fichier principal est :
+```text
+DB_PASSWORD
+JWT_SECRET
+```
+
+Sur la machine de développement :
+
+```bash
+source ~/.config/datashare/env
+```
+
+Pour vérifier uniquement leur présence :
+
+```bash
+printenv DB_PASSWORD >/dev/null && echo "DB_PASSWORD définie"
+printenv JWT_SECRET >/dev/null && echo "JWT_SECRET définie"
+```
+
+Ne pas afficher les valeurs réelles dans :
+
+- les captures d'écran ;
+- les logs ;
+- la documentation ;
+- le dépôt Git.
+
+---
+
+## 5. Démarrage du backend
+
+```bash
+cd ~/Projets/DataShare/backend
+source ~/.config/datashare/env
+./mvnw spring-boot:run
+```
+
+Adresse :
+
+```text
+http://localhost:8080
+```
+
+Après toute modification Java du backend, le serveur Spring Boot en cours d'exécution doit être redémarré afin de tester réellement la nouvelle version.
+
+---
+
+## 6. Démarrage du frontend
+
+```bash
+cd ~/Projets/DataShare/frontend
+npm start
+```
+
+Adresse :
+
+```text
+http://localhost:4200
+```
+
+---
+
+## 7. Consultation des logs
+
+Le backend écrit des logs structurés dans :
 
 ```text
 backend/logs/datashare.log
 ```
 
-Pour afficher les dernières lignes :
+Afficher les dernières lignes :
 
 ```bash
 tail -n 50 backend/logs/datashare.log
 ```
 
-Pour suivre les logs en temps réel :
+Suivre les logs en temps réel :
 
 ```bash
 tail -f backend/logs/datashare.log
 ```
 
-Les principaux événements métier journalisés sont :
+Événements métier principaux :
 
 ```text
 file_upload
@@ -118,26 +181,21 @@ file_download
 file_delete
 ```
 
-Ces événements permettent notamment de suivre :
+Les logs ne doivent pas contenir :
 
-- l'opération réalisée ;
-- l'identifiant du fichier ;
-- la taille du fichier ;
-- certaines informations nécessaires au diagnostic.
-
-Les données sensibles ne doivent pas être enregistrées dans les logs.
-
-En particulier :
-
-- les mots de passe ;
-- les JWT ;
-- les tokens de téléchargement.
+```text
+mots de passe
+hash de mots de passe
+JWT
+tokens de téléchargement
+secrets
+```
 
 ---
 
-## 3. Diagnostic d'un incident
+## 8. Diagnostic d'un incident
 
-En cas de dysfonctionnement, vérifier les composants dans l'ordre suivant.
+Ordre recommandé :
 
 ### Étape 1 - PostgreSQL
 
@@ -145,175 +203,274 @@ En cas de dysfonctionnement, vérifier les composants dans l'ordre suivant.
 systemctl status postgresql
 ```
 
-Vérifier que la base `datashare` est accessible.
+Vérifier :
 
----
+- que le service fonctionne ;
+- que la base `datashare` existe ;
+- que l'utilisateur applicatif peut se connecter.
 
 ### Étape 2 - Backend
 
-Vérifier que Spring Boot démarre sans erreur et consulter :
+Vérifier :
 
 ```text
-backend/logs/datashare.log
+démarrage Spring Boot
+logs
+exceptions Java
+connexion PostgreSQL
+migrations Flyway
+droits sur le stockage local
 ```
 
-Identifier notamment :
+### Étape 3 - API
 
-- les erreurs HTTP ;
-- les exceptions Java ;
-- les erreurs d'accès à PostgreSQL ;
-- les erreurs d'accès au stockage local.
+Contrôler :
+
+```text
+code HTTP
+corps de réponse
+headers
+JWT si route protégée
+X-Download-Password si téléchargement protégé
+```
+
+### Étape 4 - Frontend
+
+Contrôler :
+
+- console du navigateur ;
+- onglet Network ;
+- erreurs Angular ;
+- requêtes vers l'API.
 
 ---
 
-### Étape 3 - Frontend
+## 9. Diagnostic d'un téléchargement protégé
 
-Vérifier que le serveur Angular fonctionne :
+Le téléchargement utilise :
 
-```bash
-cd ~/Projets/DataShare/frontend
-npm start
+```text
+GET /api/download/{token}/file
 ```
 
-Contrôler également la console du navigateur et les requêtes réseau
-si une erreur apparaît dans l'interface.
+Pour un fichier protégé, le mot de passe est transmis avec :
+
+```text
+X-Download-Password
+```
+
+Comportements attendus :
+
+```text
+token inconnu
+→ 404 Not Found
+
+token expiré
+→ 410 Gone
+
+mot de passe absent
+→ 403 Forbidden
+
+mot de passe incorrect
+→ 403 Forbidden
+
+mot de passe correct
+→ 200 OK
+```
+
+Le mot de passe est comparé au hash BCrypt stocké en base.
 
 ---
 
-### Étape 4 - Variables d'environnement
+## 10. Content-Type invalide
 
-Vérifier que les variables nécessaires sont présentes :
+Lors d'un téléchargement, un type MIME valide est utilisé normalement.
 
-```bash
-printenv DB_PASSWORD
-printenv JWT_SECRET
+Si le Content-Type stocké est invalide, le backend utilise le fallback :
+
+```text
+application/octet-stream
 ```
 
-Ne pas afficher leur valeur dans une capture destinée à être partagée.
+Cela évite qu'une erreur de parsing du type MIME bloque le téléchargement d'un fichier valide.
+
+Ce comportement est couvert par un test automatisé.
 
 ---
 
-## 4. Procédure de correction d'un bug
+## 11. Procédure de correction d'un bug
 
 Lorsqu'un bug est identifié :
 
 1. reproduire le problème ;
-2. identifier la couche concernée ;
-3. consulter les logs ;
-4. corriger uniquement le comportement concerné ;
-5. relancer les tests ;
-6. vérifier le parcours utilisateur concerné ;
-7. vérifier qu'aucune régression majeure n'a été introduite ;
-8. créer un commit Git explicite.
+2. relever le message d'erreur ;
+3. identifier la couche concernée ;
+4. consulter les logs ;
+5. vérifier les données concernées ;
+6. appliquer une correction ciblée ;
+7. ajouter ou adapter un test si nécessaire ;
+8. relancer les tests ;
+9. vérifier le parcours fonctionnel ;
+10. contrôler `git diff` ;
+11. créer un commit explicite.
 
-Architecture backend à garder en tête :
+Une règle métier doit principalement être traitée dans la couche Service.
 
-```text
-Controller -> Service -> Repository -> PostgreSQL / stockage local
-```
+Une erreur de réponse HTTP doit être examinée dans le Controller et les handlers concernés.
 
-Une règle métier doit principalement être corrigée dans la couche Service.
-
-Un problème d'accès aux données doit être vérifié dans la couche Repository.
-
-Un problème lié aux requêtes ou réponses HTTP doit être vérifié dans
-le Controller.
+Une erreur de persistance doit être examinée côté Repository, JPA, Flyway et PostgreSQL.
 
 ---
 
-## 5. Tests de non-régression
+## 12. Tests backend
 
-Après une correction backend :
+Commande :
 
 ```bash
 cd ~/Projets/DataShare/backend
-
-export DB_PASSWORD='votre_mot_de_passe_postgresql'
-export JWT_SECRET='votre_secret_jwt'
-
+source ~/.config/datashare/env
 ./mvnw clean test
 ```
 
-Lors de la validation du projet :
+Dernière validation :
 
 ```text
-32 tests backend réussis
+41 tests réussis
+0 échec
+0 erreur
+BUILD SUCCESS
 ```
 
-Après une modification du frontend ou d'un parcours utilisateur critique :
+---
+
+## 13. Couverture JaCoCo
+
+Commande :
+
+```bash
+cd ~/Projets/DataShare/backend
+source ~/.config/datashare/env
+./mvnw clean test jacoco:report
+```
+
+Rapport :
+
+```text
+backend/target/site/jacoco/index.html
+```
+
+Derniers résultats :
+
+```text
+Instructions : 89,01 % (1515 / 1702)
+Branches     : 67,19 % (86 / 128)
+Lignes       : 90,56 % (547 / 604)
+```
+
+Une baisse importante après une modification doit être analysée.
+
+La couverture ne garantit pas à elle seule l'absence de bugs.
+
+---
+
+## 14. SpotBugs
+
+Commande :
+
+```bash
+cd ~/Projets/DataShare/backend
+./mvnw spotbugs:check
+```
+
+Dernière validation :
+
+```text
+BugInstance size is 0
+Error size is 0
+No errors/warnings found
+BUILD SUCCESS
+```
+
+---
+
+## 15. Tests frontend
+
+Lint :
+
+```bash
+cd ~/Projets/DataShare/frontend
+npx ng lint
+```
+
+Dernier résultat :
+
+```text
+All files pass linting.
+```
+
+Tests Angular :
+
+```bash
+npx ng test --watch=false
+```
+
+Dernier résultat :
+
+```text
+27 tests réussis
+```
+
+---
+
+## 16. Tests End-to-End
+
+Commande :
 
 ```bash
 cd ~/Projets/DataShare/frontend
 npx playwright test
 ```
 
-Lors de la dernière validation :
+Dernière validation :
 
 ```text
-3 tests End-to-End réussis
+3 tests réussis
 ```
 
-Le scénario E2E vérifie notamment :
+Le parcours principal couvre notamment :
 
 ```text
 Inscription
--> Connexion
--> Upload
--> Historique
--> Téléchargement
--> Suppression
-```
-
-La stratégie complète est décrite dans :
-
-```text
-TESTING.md
+→ Connexion
+→ Upload
+→ Protection par mot de passe
+→ Historique
+→ Mauvais mot de passe
+→ Bon mot de passe
+→ Téléchargement
+→ Suppression
 ```
 
 ---
 
-## 6. Couverture du code
-
-La couverture du backend est mesurée avec JaCoCo.
+## 17. Build Angular
 
 Commande :
 
 ```bash
-cd ~/Projets/DataShare/backend
-./mvnw clean test
+cd ~/Projets/DataShare/frontend
+npm run build
 ```
 
-Le rapport est généré dans :
+Le build de production est généré dans :
 
 ```text
-backend/target/site/jacoco/index.html
+frontend/dist/frontend/
 ```
-
-Résultats observés pendant la validation :
-
-```text
-Couverture des instructions : 80 %
-Couverture des branches : 73 %
-```
-
-Une baisse importante de couverture après une modification doit être analysée.
 
 ---
 
-## 7. Maintenance des dépendances
-
-Les dépendances doivent être revues régulièrement.
-
-### Fréquence recommandée
-
-- vérification mensuelle des dépendances ;
-- vérification avant une livraison importante ;
-- traitement prioritaire lorsqu'une vulnérabilité critique concerne
-  directement une dépendance utilisée en production.
-
----
-
-### Frontend
+## 18. Maintenance des dépendances frontend
 
 Afficher les dépendances obsolètes :
 
@@ -322,47 +479,40 @@ cd ~/Projets/DataShare/frontend
 npm outdated
 ```
 
-Analyser les vulnérabilités :
+Analyser les dépendances :
 
 ```bash
 npm audit
 ```
 
-Analyser uniquement les dépendances utilisées en production :
+Uniquement les dépendances de production :
 
 ```bash
 npm audit --omit=dev
 ```
 
-Ne pas exécuter automatiquement :
+Ne pas utiliser automatiquement :
 
 ```bash
 npm audit fix --force
 ```
 
-sans analyser les conséquences.
+Une mise à jour majeure doit être analysée avant intégration.
 
-Une mise à jour forcée peut provoquer :
-
-- une migration majeure d'Angular ;
-- des incompatibilités ;
-- des modifications d'API ;
-- des régressions fonctionnelles.
-
-Après toute mise à jour :
+Après une mise à jour :
 
 ```bash
-npm install
+npx ng lint
+npx ng test --watch=false
+npm run build
 npx playwright test
 ```
 
-Puis vérifier manuellement les principales pages de l'application.
-
 ---
 
-### Backend
+## 19. Maintenance des dépendances backend
 
-Les versions des dépendances sont définies dans :
+Les dépendances Maven sont définies dans :
 
 ```text
 backend/pom.xml
@@ -371,100 +521,100 @@ backend/pom.xml
 Avant une mise à jour importante :
 
 - lire les notes de version ;
-- vérifier la compatibilité avec Java 21 ;
-- vérifier la compatibilité avec Spring Boot ;
-- effectuer la mise à jour sur une branche dédiée ;
-- relancer l'ensemble des tests backend.
+- vérifier Java 21 ;
+- vérifier Spring Boot ;
+- effectuer la modification sur une branche ;
+- relancer les tests ;
+- relancer SpotBugs.
 
-Commande de validation :
+Commandes principales :
 
 ```bash
 ./mvnw clean test
+./mvnw spotbugs:check
 ```
 
 ---
 
-## 8. Maintenance de sécurité
+## 20. Maintenance de sécurité
 
-La sécurité des dépendances frontend est vérifiée avec :
+Vérifier régulièrement :
 
-```bash
-cd ~/Projets/DataShare/frontend
-npm audit
+```text
+authentification JWT
+hash BCrypt utilisateur
+hash BCrypt fichier
+contrôle du propriétaire
+expiration des fichiers
+X-Download-Password
+validation des fichiers
+taille maximale
+formats autorisés
+rate limiting
+variables d'environnement
+logs
+dépendances
 ```
 
-Les résultats détaillés et leur analyse sont documentés dans :
+La documentation complète est disponible dans :
 
 ```text
 SECURITY.md
 ```
 
-Lors d'une maintenance de sécurité, vérifier également :
-
-- le hachage des mots de passe ;
-- le fonctionnement de l'authentification JWT ;
-- les droits d'accès aux fichiers ;
-- la vérification du propriétaire avant suppression ;
-- l'expiration des liens ;
-- la limite de taille des fichiers ;
-- la whitelist des formats autorisés ;
-- la vérification du contenu réel et de la cohérence extension/contenu ;
-- le rate limiting sur la connexion et l'upload ;
-- l'absence de secrets dans Git ;
-- l'absence de mots de passe, JWT ou tokens dans les logs.
-
 ---
 
-## 9. Maintenance des performances
+## 21. Test de charge k6
 
-Le test de performance backend est réalisé avec k6.
-
-Le script est situé dans :
+Script :
 
 ```text
 performance/download-test.js
 ```
 
-Le test porte sur :
+Le scénario actuel teste :
 
 ```text
 GET /api/download/{token}/file
 ```
 
-Il utilise notamment les seuils suivants :
+avec un fichier protégé par mot de passe.
 
-```text
-taux d'erreur < 1 %
-p95 < 1000 ms
-```
-
-Exemple d'exécution :
+Commande :
 
 ```bash
 cd ~/Projets/DataShare
 
-DOWNLOAD_TOKEN='token_de_test_valide' \
+DOWNLOAD_TOKEN='<token>' \
+DOWNLOAD_PASSWORD='<mot-de-passe>' \
 BASE_URL='http://localhost:8080' \
 k6 run performance/download-test.js
 ```
 
-Ne jamais utiliser un token sensible destiné à être publié dans le repository.
-
-Lors de la validation réalisée localement :
+Seuils :
 
 ```text
-10 utilisateurs virtuels
-20 secondes
-161 545 requêtes HTTP
-0 % d'erreur
-p95 : 1,44 ms
-environ 8 076,9 requêtes par seconde
+http_req_failed < 1 %
+p95 < 1000 ms
 ```
 
-Ces résultats correspondent à un environnement local de développement
-et ne représentent pas les performances d'une infrastructure de production.
+Dernier résultat :
 
-Les détails sont disponibles dans :
+```text
+10 VUs
+20 secondes
+
+2 569 requêtes
+128,05 requêtes/s
+0 % d'erreur
+5 138 / 5 138 checks réussis
+p95 : 91,47 ms
+maximum : 207,4 ms
+```
+
+Ces résultats correspondent uniquement à l'environnement local.
+
+Documentation :
 
 ```text
 PERF.md
@@ -472,109 +622,172 @@ PERF.md
 
 ---
 
-## 10. Maintenance de PostgreSQL
+## 22. Lighthouse
 
-Vérifier régulièrement que PostgreSQL fonctionne :
+Le build Angular peut être servi localement avec :
 
 ```bash
-systemctl status postgresql
+cd ~/Projets/DataShare/frontend
+
+python3 -m http.server 4173 \
+  --directory dist/frontend/browser \
+  --bind 127.0.0.1
 ```
 
-Les données importantes sont :
+Puis :
 
-- les comptes utilisateurs ;
-- les métadonnées des fichiers ;
-- les tokens associés aux fichiers ;
-- les dates de création et d'expiration.
+```bash
+npx lighthouse http://localhost:4173 \
+  --only-categories=performance \
+  --output=json \
+  --output-path=./lighthouse-final.json
+```
 
-Avant une opération importante sur la base, une sauvegarde doit être prévue.
+Dernier résultat :
 
-Exemple de sauvegarde :
+```text
+Performance : 90/100
+FCP : 2,7 s
+LCP : 3,0 s
+TBT : 10 ms
+CLS : 0
+Speed Index : 2,7 s
+```
+
+---
+
+## 23. Maintenance PostgreSQL
+
+Sauvegarde :
 
 ```bash
 pg_dump -U datashare datashare > datashare_backup.sql
 ```
 
-Exemple de restauration :
+Restauration :
 
 ```bash
 psql -U datashare datashare < datashare_backup.sql
 ```
 
-Les fichiers contenant des sauvegardes de données ne doivent pas être
-ajoutés au repository Git.
+Les sauvegardes contenant des données réelles ne doivent pas être versionnées dans Git.
 
 ---
 
-## 11. Maintenance du stockage des fichiers
+## 24. Flyway
 
-DataShare utilise un stockage local pour les fichiers téléversés.
+Les migrations sont stockées dans :
 
-Lors d'un diagnostic, vérifier :
+```text
+backend/src/main/resources/db/migration/
+```
 
-- que le répertoire de stockage existe ;
-- que le backend possède les droits nécessaires ;
-- que l'espace disque est suffisant ;
-- que les fichiers présents correspondent aux métadonnées stockées en base.
+Hibernate utilise :
 
-Le répertoire de stockage ne doit pas être versionné dans Git.
+```properties
+spring.jpa.hibernate.ddl-auto=validate
+```
 
-Lors d'une suppression via l'application, le fichier physique et
-les métadonnées associées doivent être supprimés de manière cohérente.
+Vérifier l'historique :
+
+```bash
+sudo -u postgres psql -d datashare \
+  -c 'SELECT installed_rank, version, description, type, success FROM flyway_schema_history ORDER BY installed_rank;'
+```
+
+La migration ajoutant la protection par mot de passe des fichiers fait partie de l'historique Flyway.
+
+Une migration déjà appliquée ne doit pas être modifiée arbitrairement.
+
+Une évolution de schéma doit être ajoutée avec une nouvelle migration.
 
 ---
 
-## 12. Utilisation et revue du code produit avec l'IA
+## 25. Purge des fichiers expirés
 
-L'utilisation de l'intelligence artificielle dans le projet est documentée dans :
+Une tâche planifiée recherche les fichiers expirés.
+
+Lors de la purge, l'application retire :
+
+```text
+fichier physique
++
+métadonnées PostgreSQL
+```
+
+Lors d'un diagnostic, vérifier la cohérence entre :
+
+```text
+base de données
+uploads/
+date d'expiration
+```
+
+---
+
+## 26. Stockage local
+
+Les fichiers sont stockés localement.
+
+Vérifier :
+
+- existence du répertoire ;
+- droits du backend ;
+- espace disque disponible ;
+- cohérence avec PostgreSQL.
+
+Le stockage local convient au MVP mono-instance.
+
+Une architecture distribuée nécessiterait un stockage partagé ou objet.
+
+---
+
+## 27. Rate limiting
+
+Le rate limiting actuel est conservé en mémoire.
+
+Cela convient à une instance unique.
+
+Une architecture multi-instance nécessiterait un mécanisme partagé, par exemple :
+
+```text
+Redis
+```
+
+---
+
+## 28. Utilisation de l'IA
+
+Documentation :
 
 ```text
 AI_USAGE.md
-```
-
-La revue technique du code développé avec l'assistance de l'IA est documentée dans :
-
-```text
 AI_REVIEW.md
 ```
 
-Cette revue comprend notamment :
+Le processus appliqué est :
 
-- une relecture humaine ;
-- la vérification des codes HTTP ;
-- la vérification de la gestion des erreurs ;
-- la détection d'un problème potentiel sur le Content-Type ;
-- l'ajout d'une valeur de repli `application/octet-stream` ;
-- des tests de non-régression.
+```text
+proposition
+→ compréhension
+→ relecture
+→ test
+→ correction
+→ non-régression
+→ traçabilité Git
+```
 
-Le code proposé avec l'aide de l'IA ne doit pas être intégré sans
-compréhension, relecture et validation.
+Le code proposé avec assistance IA ne doit pas être intégré sans contrôle humain.
 
 ---
 
-## 13. Processus Git pour une maintenance
+## 29. Processus Git
 
 Avant une modification :
 
 ```bash
 git status
-```
-
-Créer une modification ciblée puis vérifier :
-
-```bash
 git diff
-```
-
-Relancer les tests nécessaires avant de créer le commit.
-
-Exemples de conventions utilisées :
-
-```text
-fix: ...
-feat: ...
-test: ...
-docs: ...
 ```
 
 Après validation :
@@ -582,79 +795,65 @@ Après validation :
 ```bash
 git add <fichiers>
 git commit -m "type: description"
-git push
 ```
 
-Les éléments suivants ne doivent pas être versionnés :
-
-- secrets ;
-- fichiers de logs ;
-- fichiers téléversés ;
-- rapports temporaires ;
-- dossiers de build ;
-- `node_modules`.
-
----
-
-## 14. Contrôle après maintenance
-
-Avant de considérer une opération de maintenance comme terminée :
-
-- vérifier que PostgreSQL fonctionne ;
-- vérifier que le backend démarre ;
-- vérifier que le frontend démarre ;
-- relancer les tests backend ;
-- relancer le scénario E2E si nécessaire ;
-- vérifier les logs ;
-- vérifier l'absence de régression visible ;
-- vérifier `git status` ;
-- documenter toute décision importante.
-
----
-
----
-
-## 15. Migrations Flyway et purge des fichiers expirés
-
-Le schéma PostgreSQL est versionné avec Flyway dans :
+Conventions utilisées :
 
 ```text
-backend/src/main/resources/db/migration/
+feat:
+fix:
+test:
+docs:
+perf:
+chore:
 ```
 
-Hibernate est configuré avec :
+Ne pas versionner :
 
-```properties
-spring.jpa.hibernate.ddl-auto=validate
+```text
+secrets
+logs
+uploads
+node_modules
+sauvegardes contenant des données
+artefacts temporaires
 ```
 
-Il ne crée ni ne modifie automatiquement le schéma.
+---
 
-Pour vérifier l'historique Flyway :
+## 30. Checklist après maintenance
 
-```bash
-sudo -u postgres psql -d datashare   -c 'SELECT installed_rank, version, description, type, success FROM flyway_schema_history ORDER BY installed_rank;'
+Avant de considérer une maintenance comme terminée :
+
+```text
+PostgreSQL fonctionne
+backend démarre
+frontend démarre
+tests backend réussissent
+tests frontend réussissent
+lint réussit
+SpotBugs réussit
+Playwright réussit
+build Angular réussit
+logs contrôlés
+git diff contrôlé
+git status contrôlé
+documentation mise à jour
 ```
 
-Les fichiers expirés sont supprimés par une tâche planifiée du backend. La purge retire le fichier physique ainsi que ses métadonnées.
-
-Le stockage et le rate limiting étant locaux à l'instance, le MVP est conçu pour une exécution mono-instance. Une architecture multi-instance nécessiterait un stockage partagé et un mécanisme distribué de rate limiting.
-
+---
 
 ## Conclusion
 
-La maintenance de DataShare repose sur plusieurs contrôles complémentaires :
+La maintenance de DataShare repose sur :
 
-- disponibilité des composants ;
-- analyse des logs ;
-- tests automatisés ;
-- couverture du code ;
-- surveillance des dépendances ;
-- contrôles de sécurité ;
-- tests de performance ;
-- maintenance de PostgreSQL et du stockage ;
-- utilisation maîtrisée de Git ;
-- revue humaine du code produit avec l'assistance de l'IA.
-
-Ces procédures permettent de corriger et faire évoluer l'application
-tout en limitant les risques de régression.
+- une architecture séparée en couches ;
+- des tests automatisés ;
+- une couverture mesurée ;
+- des analyses statiques ;
+- des contrôles de sécurité ;
+- des migrations Flyway ;
+- des tests de performance ;
+- une gestion contrôlée de PostgreSQL et du stockage ;
+- une traçabilité Git ;
+- une revue humaine des modifications.

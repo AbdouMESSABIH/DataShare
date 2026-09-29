@@ -1,91 +1,277 @@
-# Utilisation de l'IA dans le développement
+# Utilisation de l'intelligence artificielle - DataShare
 
-## Mon utilisation générale de l'IA
+## 1. Objectif
 
-Depuis le début de ma formation Expert DevOps, j'utilise l'IA comme outil
-d'accompagnement pédagogique.
+L'intelligence artificielle a été utilisée comme outil d'assistance au développement et à l'apprentissage.
 
-Avant de commencer un projet, je lui fournis le contexte nécessaire :
-consignes du projet, architecture, technologies utilisées et captures utiles.
+Elle n'a pas remplacé la compréhension, la validation ou la responsabilité humaine sur le code intégré au projet.
 
-Cela permet à l'IA de connaître l'état du projet lorsque je rencontre un
-problème au cours du développement.
+---
 
-Je l'utilise principalement pour :
+## 2. Utilisation générale
 
-- comprendre une notion technique ;
-- analyser un message d'erreur ;
-- diagnostiquer un problème étape par étape ;
-- comprendre le rôle d'un fichier ou d'une classe ;
-- obtenir des explications sur du code ;
-- vérifier une solution ;
-- apprendre pendant la résolution du problème.
+L'IA a notamment été utilisée pour :
 
-Je reste responsable des commandes exécutées, du code intégré dans le projet
-et des tests réalisés.
+- expliquer des notions techniques ;
+- analyser des erreurs ;
+- aider au diagnostic ;
+- proposer des pistes d'implémentation ;
+- expliquer du code ;
+- aider à écrire ou améliorer certains tests ;
+- relire des choix techniques ;
+- aider à structurer la documentation.
 
-## User Story identifiée pour l'utilisation de l'IA
+Les propositions n'ont pas été considérées comme automatiquement correctes.
 
-Dans le cadre de la consigne spécifique du projet demandant de tracer
-l'utilisation d'un copilote IA sur une User Story, j'ai choisi l'US02 :
+---
+
+## 3. Responsabilité humaine
+
+Avant de conserver une proposition, la démarche appliquée est :
+
+```text
+comprendre le besoin
+        ↓
+examiner la proposition
+        ↓
+relire le code
+        ↓
+exécuter les tests
+        ↓
+vérifier les erreurs
+        ↓
+corriger si nécessaire
+        ↓
+relancer la non-régression
+```
+
+La responsabilité des commandes exécutées et du code intégré reste humaine.
+
+---
+
+## 4. User Story tracée
+
+La User Story spécifiquement identifiée pour l'utilisation de l'IA est :
 
 **Télécharger un fichier partagé à partir de son token.**
 
-Cette User Story a été spécifiquement identifiée et tracée dans Git comme
-travail réalisé avec l'aide de l'IA.
+Le développement correspondant a été tracé dans Git.
 
-## Tâches réalisées sur l'US02
+Commit d'implémentation :
 
-L'IA a participé à la proposition de l'implémentation permettant :
+```text
+feat(ai): implement file download by token
+```
 
-- de rechercher un fichier à partir de son token de téléchargement ;
-- de vérifier si le token existe ;
-- de vérifier si le lien est expiré ;
-- de récupérer le fichier physique sur le disque ;
-- d'exposer les endpoints REST de téléchargement ;
-- d'intégrer la page Angular de téléchargement.
+---
 
-## Vérifications réalisées
+## 5. Fonctionnalités concernées
 
-Après l'implémentation, j'ai testé manuellement plusieurs situations :
+L'assistance IA a notamment contribué à proposer une implémentation permettant :
 
-- token valide : HTTP 200 et téléchargement du fichier ;
-- token inexistant : HTTP 404 ;
-- token expiré : HTTP 410 ;
-- ouverture du lien depuis Angular ;
-- téléchargement réel du fichier depuis le navigateur.
+- de rechercher un fichier avec son token ;
+- de vérifier l'existence du token ;
+- de vérifier l'expiration ;
+- de retrouver le fichier physique ;
+- de construire la réponse de téléchargement ;
+- d'exposer les endpoints nécessaires ;
+- d'intégrer le parcours frontend correspondant.
 
-## Relecture humaine et correction
+---
 
-J'ai ensuite relu le code proposé.
+## 6. Contrôle fonctionnel
 
-Pendant cette revue, j'ai identifié un problème potentiel dans le traitement
-du Content-Type.
+Après l'implémentation, plusieurs scénarios ont été contrôlés :
 
-Le code supposait que le Content-Type enregistré était toujours valide.
-Une valeur invalide pouvait provoquer une exception pendant le téléchargement.
+```text
+token valide
+→ téléchargement
 
-J'ai ajouté une gestion d'erreur avec une valeur de repli :
+token inconnu
+→ 404
 
-`application/octet-stream`
+token expiré
+→ 410
+```
 
-J'ai ensuite testé cette correction avec un Content-Type volontairement
-invalide et vérifié que le téléchargement continuait à fonctionner.
+Le fonctionnement côté Angular a également été vérifié.
 
-## Traçabilité Git
+---
 
-Le développement identifié comme contribution IA est tracé avec le commit :
+## 7. Relecture humaine
 
-`feat(ai): implement file download by token`
+Le code n'a pas été accepté uniquement parce qu'il avait été proposé avec l'assistance de l'IA.
 
-La correction réalisée après ma revue est tracée avec le commit :
+Une relecture a été réalisée sur :
 
-`fix(download): handle invalid content type after human review`
+```text
+codes HTTP
+gestion des erreurs
+Content-Type
+headers de téléchargement
+accès au fichier physique
+comportement avec les tokens
+```
 
-## Supervision
+---
 
-L'IA est utilisée comme un outil d'aide et d'apprentissage.
+## 8. Anomalie détectée
 
-Je vérifie les propositions avant de les intégrer et je teste les
-fonctionnalités afin de comprendre leur fonctionnement et de pouvoir
-les expliquer lors de la soutenance.
+Pendant la revue, un problème potentiel a été identifié concernant le Content-Type.
+
+Une valeur MIME invalide pouvait provoquer une erreur lors de la construction de la réponse HTTP.
+
+Une correction humaine a donc été réalisée pour prévoir un fallback :
+
+```text
+application/octet-stream
+```
+
+Commit historique de correction :
+
+```text
+fix(download): handle invalid content type after human review
+```
+
+---
+
+## 9. État actuel de cette correction
+
+Le comportement est toujours présent dans la version actuelle du projet.
+
+Le contrôleur de téléchargement tente d'utiliser le Content-Type du fichier.
+
+Si celui-ci est invalide ou inexploitable, le backend utilise :
+
+```text
+application/octet-stream
+```
+
+Cette logique est désormais également couverte par un test automatisé.
+
+---
+
+## 10. Évolution du projet
+
+Depuis l'implémentation initiale de la User Story, le projet a évolué.
+
+Le téléchargement prend maintenant également en charge la protection des fichiers par mot de passe.
+
+Le mot de passe est envoyé via :
+
+```text
+X-Download-Password
+```
+
+et contrôlé par le backend avec BCrypt.
+
+Cette évolution ne change pas le principe de la revue humaine appliquée au code.
+
+---
+
+## 11. Tests actuels
+
+La validation finale du backend comprend :
+
+```text
+41 tests
+0 échec
+0 erreur
+```
+
+Le frontend comprend :
+
+```text
+27 tests Angular
+```
+
+Les tests End-to-End comprennent :
+
+```text
+3 scénarios Playwright
+```
+
+Les tests ne prouvent pas que le code est parfait, mais ils constituent un moyen de contrôler les propositions et de limiter les régressions.
+
+---
+
+## 12. Analyse statique et qualité
+
+Les contrôles finaux comprennent notamment :
+
+```text
+ESLint : succès
+SpotBugs : 0 bug / 0 erreur
+```
+
+Couverture backend finale :
+
+```text
+Instructions : 89,01 %
+Branches : 67,19 %
+Lignes : 90,56 %
+```
+
+---
+
+## 13. Traçabilité Git
+
+Les commits historiques permettent de distinguer :
+
+```text
+3207354 feat(ai): implement file download by token
+40e879e fix(download): handle invalid content type after human review
+```
+
+Cette séparation montre :
+
+```text
+proposition initiale
+→ revue
+→ anomalie identifiée
+→ correction
+```
+
+---
+
+## 14. Ce que l'IA n'a pas décidé seule
+
+L'IA n'a pas eu l'autorité finale sur :
+
+- l'intégration du code ;
+- les commandes exécutées ;
+- la validation fonctionnelle ;
+- la conservation d'une solution ;
+- les corrections ;
+- les commits Git.
+
+La validation reste réalisée à partir :
+
+```text
+du code
+des tests
+du comportement observé
+des exigences du projet
+```
+
+---
+
+## Conclusion
+
+L'utilisation de l'IA dans DataShare suit un principe de supervision humaine :
+
+```text
+IA comme assistant
+        ↓
+compréhension humaine
+        ↓
+relecture
+        ↓
+tests
+        ↓
+correction
+        ↓
+traçabilité
+```
+
+L'exemple du Content-Type invalide montre concrètement qu'une proposition assistée par IA peut nécessiter une correction après analyse humaine.

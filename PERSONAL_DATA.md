@@ -1,110 +1,340 @@
-# Données personnelles et durée de conservation
+# Données personnelles et durée de conservation - DataShare
 
-## Finalité du traitement
+## 1. Objectif
 
-DataShare traite les données nécessaires au fonctionnement du service de partage de fichiers.
+Ce document décrit les principales données manipulées par DataShare et leur cycle de vie dans le MVP.
 
-Ces données permettent notamment de :
+Il s'agit d'une documentation technique du projet.
 
-- créer et authentifier un compte utilisateur ;
-- associer les fichiers téléversés à leur propriétaire ;
-- afficher l'historique des fichiers d'un utilisateur ;
-- permettre le téléchargement et la suppression des fichiers ;
-- assurer la sécurité et le bon fonctionnement de l'application.
+Elle ne constitue pas à elle seule une analyse juridique complète ni une certification de conformité réglementaire.
 
-## Données liées au compte utilisateur
+---
 
-Lors de la création d'un compte, DataShare conserve :
+## 2. Données du compte utilisateur
 
-- l'adresse e-mail de l'utilisateur ;
-- le hash du mot de passe ;
-- la date de création du compte.
+Lors de l'inscription, DataShare conserve notamment :
 
-Le mot de passe n'est jamais enregistré en clair dans la base de données.
+```text
+adresse e-mail
+hash du mot de passe
+date de création du compte
+```
 
-## Données liées aux fichiers
+Le mot de passe utilisateur n'est pas enregistré en clair.
 
-Lorsqu'un fichier est téléversé, l'application conserve notamment :
+Il est hashé avec BCrypt avant stockage.
 
-- le nom original du fichier ;
-- son nom de stockage interne ;
-- sa taille ;
-- son type de contenu ;
-- sa date de création ;
-- sa date d'expiration ;
-- son token de téléchargement ;
-- son association avec le compte propriétaire.
+---
 
-Le contenu du fichier est stocké localement sur le serveur dans le répertoire `uploads/`.
+## 3. Données associées aux fichiers
 
-Le contenu d'un fichier peut lui-même contenir des données personnelles. DataShare ne réalise pas d'analyse fonctionnelle du contenu des documents.
+Lors du téléversement, DataShare conserve notamment :
 
-## Durée de conservation des fichiers
+```text
+nom original
+nom interne de stockage
+taille
+Content-Type
+date de création
+date d'expiration
+token de téléchargement
+propriétaire
+hash éventuel du mot de passe fichier
+```
 
-Lors du téléversement, l'utilisateur choisit une durée de validité comprise entre 1 et 7 jours.
+Le mot de passe protégeant un fichier n'est pas stocké en clair.
 
-Une tâche planifiée du backend recherche régulièrement les fichiers dont la date d'expiration est dépassée. Lors de la purge, l'application supprime :
+Il est transformé en hash BCrypt.
 
-- le fichier physique présent sur le disque ;
-- les métadonnées correspondantes dans PostgreSQL.
+---
 
-La suppression intervient donc après expiration, lors de la prochaine exécution de la tâche planifiée.
+## 4. Contenu des fichiers
 
-Un utilisateur authentifié peut également supprimer manuellement l'un de ses fichiers avant sa date d'expiration.
+Le contenu physique des fichiers est stocké localement dans le répertoire de stockage du backend.
 
-## Conservation des données du compte
+Le fichier peut lui-même contenir des données personnelles ou confidentielles.
 
-Les informations liées au compte utilisateur sont conservées tant que le compte existe.
+DataShare ne réalise pas d'analyse sémantique du contenu des documents.
 
-## Suppression du compte
+---
 
-Dans la version actuelle du MVP, DataShare ne propose pas encore d'auto-suppression du compte depuis l'interface utilisateur.
+## 5. Durée de conservation
 
-Cette limitation est documentée. Dans l'état actuel du projet, la suppression d'un compte nécessite une intervention administrative prenant notamment en compte :
+Lors de l'upload, la durée de validité est comprise entre :
 
-- les fichiers encore associés au compte ;
-- les métadonnées correspondantes ;
-- les contraintes de relation entre les fichiers et leur propriétaire dans PostgreSQL ;
-- puis la suppression du compte utilisateur.
+```text
+1 et 7 jours
+```
 
-Une évolution future pourra ajouter une fonctionnalité d'auto-suppression directement dans l'application.
+La date d'expiration est enregistrée dans PostgreSQL.
 
-## Sécurité des données
+Une fois le fichier expiré, son lien de téléchargement n'est plus utilisable.
 
-Les mots de passe sont stockés sous forme de hash et non en clair.
+L'API retourne :
 
-L'accès aux fonctionnalités protégées repose sur une authentification par JWT et Spring Security côté backend.
+```text
+410 Gone
+```
 
-Les fichiers téléversés sont soumis à plusieurs contrôles :
+---
 
-- taille maximale de 1 Go ;
-- liste blanche de formats autorisés ;
-- vérification du contenu réel du fichier ;
-- vérification de la cohérence entre l'extension et le contenu ;
-- durée d'expiration comprise entre 1 et 7 jours ;
-- limitation du débit des téléversements.
+## 6. Purge des fichiers expirés
 
-Les formats actuellement autorisés sont : TXT, PDF, PNG, JPG et JPEG.
+Une tâche planifiée recherche les fichiers expirés.
 
-## Limitation de débit
+Lors de la purge, elle supprime :
 
-Dans le MVP actuel :
+```text
+le fichier physique
++
+les métadonnées associées
+```
 
-- les tentatives de connexion sont limitées à 10 requêtes par minute et par adresse IP ;
-- les téléversements sont limités à 20 requêtes par minute et par adresse IP.
+La suppression intervient lors du passage de la tâche de nettoyage suivant l'expiration.
 
-Lorsque la limite est dépassée, l'API renvoie `HTTP 429 Too Many Requests`.
+---
 
-La limitation de débit est actuellement conservée en mémoire dans l'instance du backend. Dans une architecture multi-instance, un mécanisme partagé tel que Redis serait nécessaire.
+## 7. Suppression manuelle
 
-## Limites du MVP
+Un utilisateur authentifié peut supprimer l'un de ses fichiers avant expiration.
 
-DataShare est un MVP réalisé dans un cadre pédagogique.
+La suppression concerne :
 
-Le MVP ne propose notamment pas encore :
+```text
+fichier physique
++
+métadonnées
+```
 
-- d'auto-suppression du compte ;
-- de stockage distribué des fichiers ;
-- de gestion distribuée du rate limiting.
+Le backend vérifie que le fichier appartient à l'utilisateur connecté.
 
-Ce document décrit le fonctionnement technique du projet. Il ne constitue pas à lui seul une mise en conformité juridique complète pour une application déployée en production.
+---
+
+## 8. Historique utilisateur
+
+L'historique ne retourne que les fichiers associés à l'utilisateur authentifié.
+
+L'accès utilise le JWT.
+
+Un utilisateur ne doit pas recevoir l'historique d'un autre utilisateur.
+
+---
+
+## 9. Liens de partage
+
+Chaque fichier possède un token de téléchargement.
+
+Ce token est distinct du JWT de l'utilisateur.
+
+Il permet d'accéder à la page publique correspondant au fichier.
+
+La protection peut également inclure :
+
+```text
+expiration
++
+mot de passe fichier
+```
+
+Le token de téléchargement doit être considéré comme une donnée sensible et ne doit pas être écrit inutilement dans les logs.
+
+---
+
+## 10. Mot de passe fichier
+
+Lorsque le fichier est protégé :
+
+```text
+mot de passe saisi
+→ BCrypt
+→ hash stocké en base
+```
+
+Pendant le téléchargement, le mot de passe fourni est comparé au hash.
+
+Le mot de passe en clair :
+
+- n'est pas enregistré en base ;
+- ne doit pas être écrit dans les logs ;
+- ne doit pas être versionné dans Git.
+
+---
+
+## 11. Données présentes dans les logs
+
+Les logs techniques peuvent contenir des informations utiles au diagnostic.
+
+Ils ne doivent pas contenir :
+
+```text
+mot de passe utilisateur
+mot de passe fichier
+JWT
+JWT_SECRET
+DB_PASSWORD
+token de téléchargement
+```
+
+Les événements métier principaux sont :
+
+```text
+file_upload
+file_download
+file_delete
+```
+
+---
+
+## 12. Sécurité des fichiers
+
+Les fichiers téléversés sont contrôlés.
+
+Contraintes principales :
+
+```text
+taille maximale : 1 Go
+expiration : 1 à 7 jours
+
+formats :
+TXT
+PDF
+PNG
+JPG
+JPEG
+```
+
+Le backend vérifie notamment :
+
+- extension ;
+- contenu réel ;
+- cohérence entre extension et contenu.
+
+Ces contrôles ne remplacent pas une solution antivirus de production.
+
+---
+
+## 13. Authentification
+
+Les fonctions privées utilisent :
+
+```text
+Spring Security
+JWT
+```
+
+Le JWT permet d'identifier l'utilisateur pour les opérations protégées.
+
+---
+
+## 14. Suppression du compte
+
+Le MVP actuel ne fournit pas de fonction d'auto-suppression du compte dans l'interface.
+
+La suppression complète d'un compte nécessiterait de traiter correctement :
+
+```text
+fichiers du propriétaire
+métadonnées des fichiers
+relations PostgreSQL
+compte utilisateur
+```
+
+Cette fonction constitue une évolution possible.
+
+---
+
+## 15. Conservation des comptes
+
+Les informations du compte sont conservées tant que le compte existe.
+
+Le mécanisme d'expiration automatique concerne actuellement les fichiers, et non les comptes utilisateurs.
+
+---
+
+## 16. Rate limiting
+
+Le MVP applique notamment une limitation de débit sur certaines opérations sensibles.
+
+La documentation de sécurité décrit ce mécanisme dans :
+
+```text
+SECURITY.md
+```
+
+Le rate limiting actuel est local à l'instance du backend.
+
+---
+
+## 17. PostgreSQL
+
+PostgreSQL contient notamment :
+
+```text
+utilisateurs
+hash des mots de passe utilisateurs
+métadonnées des fichiers
+hash éventuel des mots de passe fichiers
+tokens de téléchargement
+dates d'expiration
+```
+
+Les sauvegardes PostgreSQL peuvent donc contenir des données sensibles.
+
+Elles doivent être protégées et ne doivent pas être ajoutées au dépôt Git.
+
+---
+
+## 18. Stockage local
+
+Le stockage local convient au MVP pédagogique.
+
+Une mise en production nécessiterait une réflexion supplémentaire concernant :
+
+- chiffrement ;
+- contrôle d'accès au stockage ;
+- sauvegarde ;
+- restauration ;
+- stockage objet ;
+- disponibilité ;
+- suppression garantie ;
+- supervision.
+
+---
+
+## 19. Limites
+
+DataShare est un MVP pédagogique.
+
+Il ne fournit pas actuellement :
+
+```text
+auto-suppression du compte
+stockage distribué
+rate limiting distribué
+antivirus spécialisé
+gestion complète du cycle de vie juridique des données
+```
+
+Une mise en production réelle nécessiterait une analyse spécifique des obligations réglementaires et organisationnelles.
+
+---
+
+## Conclusion
+
+DataShare limite la conservation des fichiers à une durée choisie entre 1 et 7 jours et dispose d'une purge automatique.
+
+Les mots de passe utilisateurs et fichiers sont stockés uniquement sous forme de hash BCrypt.
+
+Le projet applique également :
+
+```text
+JWT
+contrôle du propriétaire
+expiration
+validation des fichiers
+protection par mot de passe
+suppression manuelle
+purge automatique
+```
+
+Ces mécanismes constituent la gestion technique des données dans le cadre du MVP.

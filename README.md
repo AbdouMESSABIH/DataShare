@@ -1,85 +1,125 @@
 # DataShare
 
-DataShare est une application web de partage sécurisé de fichiers.
+DataShare est une application web de partage sécurisé de fichiers réalisée dans le cadre de la formation **Expert DevOps - OpenClassrooms**.
 
-Elle permet à un utilisateur de créer un compte, de s’authentifier,
-de téléverser des fichiers, de générer un lien de téléchargement temporaire,
-de consulter son historique et de supprimer ses fichiers.
+L'application permet à un utilisateur de :
 
-Le projet a été réalisé dans le cadre de la formation
-**Expert DevOps - OpenClassrooms**.
+- créer un compte ;
+- s'authentifier avec un JWT ;
+- téléverser un fichier ;
+- protéger le téléchargement avec un mot de passe ;
+- définir une durée d'expiration ;
+- générer un lien de partage ;
+- consulter l'historique de ses fichiers ;
+- télécharger un fichier partagé ;
+- supprimer ses propres fichiers.
 
 ---
 
 ## 1. Fonctionnalités principales
 
-DataShare permet notamment :
+DataShare propose :
 
-- la création d’un compte utilisateur ;
-- l’authentification avec JWT ;
-- le téléversement de fichiers ;
-- la génération d’un token de téléchargement ;
-- la définition d’une durée d’expiration comprise entre 1 et 7 jours ;
-- le téléchargement d’un fichier à partir d’un token ;
-- la consultation de l’historique des fichiers ;
-- la suppression d’un fichier par son propriétaire ;
-- la gestion des erreurs ;
-- la journalisation structurée des opérations principales.
+- inscription utilisateur ;
+- authentification JWT ;
+- téléversement de fichiers ;
+- protection des fichiers par mot de passe ;
+- hash BCrypt des mots de passe ;
+- génération d'un token de téléchargement ;
+- liens temporaires de 1 à 7 jours ;
+- historique paginé ;
+- suppression par le propriétaire ;
+- téléchargement public via token et mot de passe ;
+- validation du contenu réel des fichiers ;
+- purge automatique des fichiers expirés ;
+- rate limiting ;
+- logs structurés ;
+- tests automatisés ;
+- analyse de couverture ;
+- tests de charge ;
+- analyse de performance frontend.
 
 Contraintes principales :
 
-- taille maximale d’un fichier : **1 Go** ;
-- seuls les formats TXT, PDF, PNG, JPG et JPEG sont autorisés ;
-- le contenu réel du fichier est vérifié et doit correspondre au type attendu ;
-- les liens expirés ne permettent plus le téléchargement.
+```text
+Taille maximale : 1 Go
+
+Formats autorisés :
+TXT
+PDF
+PNG
+JPG
+JPEG
+
+Expiration :
+1 à 7 jours
+```
+
+Le contenu réel du fichier est vérifié afin de détecter les fichiers dont l'extension ne correspond pas au contenu.
 
 ---
 
 ## 2. Architecture
 
-L’application est organisée autour de deux parties principales :
+Architecture générale :
 
 ```text
-Utilisateur
-    |
-    v
-Frontend Angular
-    |
-    | API REST / JSON
-    v
-Backend Spring Boot
-    |
-    +--> PostgreSQL
-    |
-    +--> Stockage local des fichiers
+┌─────────────────────┐
+│     UTILISATEUR     │
+│  Navigateur Web     │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│      FRONT-END      │
+│       Angular       │
+└──────────┬──────────┘
+           │
+           │ API REST
+           │ JSON / HTTP(S)
+           │ JWT
+           ▼
+┌─────────────────────┐
+│      BACK-END       │
+│    Spring Boot      │
+└──────────┬──────────┘
+           │
+           ├──────────────────────┐
+           │                      │
+           ▼                      ▼
+┌─────────────────────┐  ┌─────────────────────┐
+│     PostgreSQL      │  │   Stockage local    │
+│ Métadonnées         │  │      uploads/       │
+│ Utilisateurs        │  │ Fichiers physiques  │
+└─────────────────────┘  └─────────────────────┘
 ```
 
-Le backend utilise une architecture en couches :
+Architecture backend :
 
 ```text
 Controller
-    |
-    v
+    │
+    ▼
 Service
-    |
-    v
+    │
+    ▼
 Repository
-    |
-    v
-PostgreSQL
+    │
+    ▼
+PostgreSQL / stockage local
 ```
 
-Responsabilités principales :
+Responsabilités :
 
-- **Controller** : reçoit les requêtes HTTP et retourne les réponses ;
-- **Service** : contient la logique métier ;
-- **Repository** : gère l’accès aux données ;
-- **PostgreSQL** : stocke les utilisateurs et les métadonnées ;
-- **stockage local** : contient les fichiers physiques.
+- **Controller** : requêtes et réponses HTTP ;
+- **Service** : logique métier ;
+- **Repository** : accès aux données ;
+- **PostgreSQL** : utilisateurs et métadonnées ;
+- **stockage local** : fichiers physiques.
 
 ---
 
-## 3. Technologies utilisées
+## 3. Technologies
 
 ### Backend
 
@@ -87,12 +127,17 @@ Responsabilités principales :
 - Spring Boot
 - Spring Security
 - Spring Data JPA
+- Hibernate
 - PostgreSQL
+- Flyway
 - JWT
+- BCrypt
 - Maven
-- JUnit
+- JUnit 5
+- Mockito
 - MockMvc
 - JaCoCo
+- SpotBugs
 
 ### Frontend
 
@@ -100,40 +145,36 @@ Responsabilités principales :
 - TypeScript
 - HTML
 - SCSS
-- Playwright
-
-### Qualité, sécurité et performance
-
-- JaCoCo
+- Angular TestBed
+- Karma
 - ESLint
-- SpotBugs
 - Playwright
-- npm audit
+
+### Performance et qualité
+
 - k6
-- Flyway
-- logs structurés JSON
+- Lighthouse
+- JaCoCo
+- SpotBugs
+- ESLint
+- npm audit
 
 ---
 
 ## 4. Prérequis
 
-Les outils suivants sont nécessaires :
-
-- Git
-- Java 21
-- Node.js
-- npm
-- PostgreSQL
-
-Sous Fedora, le script `scripts/install-fedora.sh` peut être utilisé.
-
-Une alternative multi-distribution est disponible avec :
+Sous Fedora :
 
 ```bash
-./scripts/install-linux.sh
+sudo dnf install git java-21-openjdk nodejs npm postgresql postgresql-server
 ```
 
-Elle prend en charge Fedora (`dnf`) ainsi que Debian/Ubuntu (`apt`). Voir `PORTABILITY.md`.
+Le projet fournit également :
+
+```text
+scripts/install-fedora.sh
+scripts/install-linux.sh
+```
 
 Vérification :
 
@@ -147,18 +188,27 @@ git --version
 
 ---
 
-## 5. Installation du projet
+## 5. Installation
 
-Cloner le repository :
+Cloner le dépôt :
 
 ```bash
 git clone https://github.com/AbdouMESSABIH/DataShare.git
 cd DataShare
 ```
 
+Installer les dépendances frontend :
+
+```bash
+cd frontend
+npm install
+```
+
+Le backend utilise le Maven Wrapper fourni avec le projet.
+
 ---
 
-## 6. Configuration de PostgreSQL
+## 6. PostgreSQL sous Fedora
 
 Initialiser PostgreSQL si nécessaire :
 
@@ -166,13 +216,13 @@ Initialiser PostgreSQL si nécessaire :
 sudo postgresql-setup --initdb --unit postgresql
 ```
 
-Démarrer PostgreSQL :
+Activer et démarrer le service :
 
 ```bash
 sudo systemctl enable --now postgresql
 ```
 
-Vérifier son état :
+Vérifier :
 
 ```bash
 systemctl status postgresql
@@ -184,90 +234,86 @@ Ouvrir PostgreSQL :
 sudo -u postgres psql
 ```
 
-Exemple de création de l’utilisateur et de la base :
+Créer l'utilisateur et la base :
 
 ```sql
 CREATE USER datashare WITH PASSWORD 'votre_mot_de_passe';
 CREATE DATABASE datashare OWNER datashare;
 ```
 
-Quitter PostgreSQL :
+Quitter :
 
 ```text
 \q
 ```
 
-La base utilisée par l’application est :
-
-```text
-datashare
-```
-
-L’utilisateur PostgreSQL utilisé est :
-
-```text
-datashare
-```
-
-Le mot de passe ne doit jamais être enregistré directement dans Git.
-
 ---
 
-## 7. Variables d’environnement
+## 7. Variables d'environnement
 
-Le backend utilise des variables d’environnement pour les données sensibles.
+Le backend utilise notamment :
 
-Dans le terminal qui servira à lancer le backend :
+```text
+DB_PASSWORD
+JWT_SECRET
+```
+
+Exemple :
 
 ```bash
 export DB_PASSWORD='votre_mot_de_passe_postgresql'
 export JWT_SECRET='votre_secret_jwt'
 ```
 
-Ces variables doivent être redéfinies dans chaque nouveau terminal
-avant de démarrer le backend.
+Sur la machine de développement, elles peuvent être placées dans :
 
-Ne jamais enregistrer les valeurs réelles dans le repository Git.
+```text
+~/.config/datashare/env
+```
+
+puis chargées avec :
+
+```bash
+source ~/.config/datashare/env
+```
+
+Les secrets réels ne doivent jamais être versionnés dans Git.
 
 ---
 
-## 8. Configuration du backend
+## 8. Base de données et Flyway
 
-La configuration principale se trouve dans :
+Configuration principale :
 
 ```text
 backend/src/main/resources/application.properties
 ```
 
-Elle utilise notamment :
+Le schéma PostgreSQL est versionné avec Flyway :
 
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/datashare
-spring.datasource.username=datashare
-spring.datasource.password=${DB_PASSWORD}
-
-jwt.secret=${JWT_SECRET}
+```text
+backend/src/main/resources/db/migration/
 ```
 
-Le schéma PostgreSQL est versionné avec Flyway. Hibernate vérifie le schéma sans le modifier automatiquement :
+Hibernate vérifie la cohérence du schéma :
 
 ```properties
-spring.flyway.enabled=true
 spring.jpa.hibernate.ddl-auto=validate
 ```
+
+Flyway applique les migrations nécessaires au démarrage.
 
 ---
 
 ## 9. Lancer le backend
 
-Depuis la racine du projet :
-
 ```bash
-cd backend
+cd ~/Projets/DataShare/backend
+source ~/.config/datashare/env
 ./mvnw spring-boot:run
 ```
 
-Le backend est accessible sur :
+Backend :
 
 ```text
 http://localhost:8080
@@ -277,15 +323,14 @@ http://localhost:8080
 
 ## 10. Lancer le frontend
 
-Dans un second terminal :
+Dans un autre terminal :
 
 ```bash
 cd ~/Projets/DataShare/frontend
-npm install
 npm start
 ```
 
-Le frontend est accessible sur :
+Frontend :
 
 ```text
 http://localhost:4200
@@ -293,59 +338,119 @@ http://localhost:4200
 
 ---
 
-## 11. Utilisation de DataShare
+## 11. Utilisation
 
-Une fois PostgreSQL, le backend et le frontend démarrés :
+Parcours principal :
 
-1. ouvrir `http://localhost:4200` ;
-2. créer un compte ;
-3. se connecter ;
-4. sélectionner un fichier ;
-5. choisir sa durée d’expiration ;
-6. téléverser le fichier ;
-7. récupérer le lien de téléchargement ;
-8. consulter l’historique ;
-9. télécharger ou supprimer le fichier.
+```text
+Créer un compte
+        ↓
+Se connecter
+        ↓
+Sélectionner un fichier
+        ↓
+Choisir un mot de passe
+        ↓
+Choisir la durée d'expiration
+        ↓
+Téléverser
+        ↓
+Récupérer le lien de partage
+        ↓
+Ouvrir le lien
+        ↓
+Saisir le mot de passe
+        ↓
+Télécharger
+```
+
+L'utilisateur connecté peut également :
+
+```text
+consulter son historique
+supprimer ses fichiers
+```
 
 ---
 
-## 12. API REST
+## 12. Protection par mot de passe
 
-Le frontend communique avec le backend via une API REST utilisant JSON.
+Lors de l'upload, le frontend envoie :
 
-La documentation détaillée des endpoints est disponible dans :
+```text
+password
+```
+
+Le backend ne stocke pas ce mot de passe en clair.
+
+Il utilise BCrypt :
+
+```text
+mot de passe
+    ↓
+BCrypt
+    ↓
+hash
+    ↓
+PostgreSQL
+```
+
+Lors du téléchargement, le mot de passe est transmis dans :
+
+```text
+X-Download-Password
+```
+
+Un mot de passe incorrect ou absent pour un fichier protégé retourne :
+
+```text
+403 Forbidden
+```
+
+---
+
+## 13. API REST
+
+La documentation complète de l'API se trouve dans :
 
 ```text
 API.md
 ```
 
-Les principales fonctionnalités exposées concernent :
+Endpoints principaux :
 
-- l’inscription ;
-- la connexion ;
-- l’upload ;
-- l’historique ;
-- le téléchargement ;
-- la suppression.
+```text
+POST   /api/auth/register
+POST   /api/auth/login
+
+POST   /api/files/upload
+GET    /api/files
+DELETE /api/files/{id}
+
+GET    /api/download/{token}
+GET    /api/download/{token}/file
+```
 
 ---
 
-## 13. Sécurité
+## 14. Sécurité
 
-Plusieurs mécanismes ont été mis en place :
+Le projet utilise notamment :
 
-- hachage des mots de passe ;
-- authentification JWT ;
-- contrôle des accès aux ressources protégées ;
-- vérification du propriétaire avant suppression ;
-- expiration des liens de téléchargement ;
-- limitation de la taille des fichiers à 1 Go ;
-- whitelist TXT, PDF, PNG, JPG et JPEG ;
-- vérification du contenu réel et de la cohérence extension/contenu ;
-- rate limiting sur la connexion et l'upload ;
-- stockage des secrets dans des variables d’environnement ;
-- analyse statique avec ESLint et SpotBugs ;
-- analyse des dépendances frontend avec `npm audit`.
+- Spring Security ;
+- JWT ;
+- BCrypt pour les mots de passe utilisateurs ;
+- BCrypt pour les mots de passe fichiers ;
+- contrôle du propriétaire ;
+- expiration des liens ;
+- validation des fichiers ;
+- limite de taille de 1 Go ;
+- whitelist de formats ;
+- vérification du contenu réel ;
+- rate limiting ;
+- variables d'environnement ;
+- contrôle ESLint ;
+- contrôle SpotBugs.
 
 La documentation détaillée est disponible dans :
 
@@ -355,194 +460,208 @@ SECURITY.md
 
 ---
 
-## 14. Accessibilité et ergonomie
+## 15. Tests backend
 
-Plusieurs bonnes pratiques d’accessibilité ont été ajoutées au frontend :
-
-- labels associés aux champs de formulaire ;
-- texte alternatif sur le logo ;
-- boutons HTML explicites ;
-- attributs ARIA pour certains champs et messages ;
-- messages d’erreur annoncés aux technologies d’assistance ;
-- utilisation de `aria-invalid` et `aria-describedby` ;
-- utilisation de `role="alert"` et `aria-live` ;
-- autocomplétion adaptée aux champs d’authentification ;
-- interface responsive.
-
-Ces améliorations s’inscrivent dans les bonnes pratiques d’accessibilité
-issues notamment des recommandations WCAG et du référentiel RGAA.
-
----
-
-## 15. Tests
-
-Le projet utilise plusieurs niveaux de tests.
-
-### Tests unitaires
-
-Les tests unitaires vérifient notamment les règles métier du backend :
-
-- rejet des fichiers interdits ;
-- rejet d’un fichier vide ;
-- validation de la durée d’expiration ;
-- limite de taille ;
-- gestion des tokens invalides ;
-- gestion des tokens expirés ;
-- inscription ;
-- authentification.
-
-### Tests d’intégration
-
-Les tests d’intégration vérifient les interactions entre :
-
-- les contrôleurs ;
-- les services ;
-- PostgreSQL ;
-- le stockage des fichiers ;
-- Spring Security.
-
-### Test End-to-End
-
-Playwright vérifie un parcours utilisateur complet :
-
-```text
-Inscription
-    ->
-Connexion
-    ->
-Upload
-    ->
-Historique
-    ->
-Téléchargement
-    ->
-Suppression
-```
-
-Résultats validés pendant le développement :
-
-```text
-32 tests backend réussis
-22 tests Angular réussis
-3 tests End-to-End Playwright réussis
-```
-
-Pour lancer les tests backend :
+Commande :
 
 ```bash
 cd ~/Projets/DataShare/backend
-
-export DB_PASSWORD='votre_mot_de_passe_postgresql'
-export JWT_SECRET='votre_secret_jwt'
-
+source ~/.config/datashare/env
 ./mvnw clean test
 ```
 
-Pour lancer le test End-to-End :
+Dernier résultat validé :
+
+```text
+Tests run: 41
+Failures: 0
+Errors: 0
+Skipped: 0
+BUILD SUCCESS
+```
+
+---
+
+## 16. Tests frontend
+
+Lint :
+
+```bash
+cd ~/Projets/DataShare/frontend
+npx ng lint
+```
+
+Résultat :
+
+```text
+All files pass linting.
+```
+
+Tests Angular :
+
+```bash
+npx ng test --watch=false
+```
+
+Dernier résultat :
+
+```text
+27 SUCCESS
+```
+
+---
+
+## 17. Tests End-to-End
+
+Playwright :
 
 ```bash
 cd ~/Projets/DataShare/frontend
 npx playwright test
 ```
 
-La stratégie de tests est détaillée dans :
+Dernier résultat :
 
 ```text
-TESTING.md
+3 passed
+```
+
+Le scénario principal couvre :
+
+```text
+Inscription
+→ Connexion
+→ Upload protégé par mot de passe
+→ Historique
+→ Mauvais mot de passe
+→ Bon mot de passe
+→ Téléchargement
+→ Suppression
 ```
 
 ---
 
-## 16. Couverture du code
+## 18. Couverture JaCoCo
 
-JaCoCo est utilisé pour mesurer la couverture du backend.
-
-Commande :
+Génération :
 
 ```bash
 cd ~/Projets/DataShare/backend
-./mvnw clean test
+source ~/.config/datashare/env
+./mvnw clean test jacoco:report
 ```
 
-Le rapport HTML est généré dans :
+Rapport :
 
 ```text
 backend/target/site/jacoco/index.html
 ```
 
-Résultats obtenus lors de la validation :
+Dernière mesure :
 
 ```text
-Couverture des instructions : 80 %
-Couverture des branches : 73 %
+Instructions : 89,01 % (1515 / 1702)
+Branches     : 67,19 % (86 / 128)
+Lignes       : 90,56 % (547 / 604)
+```
+
+La couverture mesure le code exécuté pendant les tests mais ne garantit pas à elle seule l'absence de bugs.
+
+---
+
+## 19. SpotBugs
+
+Commande :
+
+```bash
+cd ~/Projets/DataShare/backend
+./mvnw spotbugs:check
+```
+
+Dernier résultat :
+
+```text
+BugInstance size is 0
+Error size is 0
+No errors/warnings found
+BUILD SUCCESS
 ```
 
 ---
 
-## 17. Analyse des dépendances
+## 20. Build Angular
 
-Le frontend peut être analysé avec :
+Commande :
 
 ```bash
 cd ~/Projets/DataShare/frontend
-npm audit
+npm run build
 ```
 
-Pour analyser uniquement les dépendances utilisées en production :
-
-```bash
-npm audit --omit=dev
-```
-
-Une mise à jour majeure forcée n’est pas appliquée automatiquement
-lorsqu’elle risque d’introduire des incompatibilités.
-
-Les résultats et décisions sont documentés dans :
+Le build de production est généré dans :
 
 ```text
-SECURITY.md
+frontend/dist/frontend/
 ```
 
 ---
 
-## 18. Performance
+## 21. Performance backend avec k6
 
-Un test de charge du backend a été réalisé avec k6 sur le téléchargement
-d’un fichier.
-
-Le script se trouve dans :
+Script :
 
 ```text
 performance/download-test.js
 ```
 
-Scénario utilisé :
+Scénario final :
 
 ```text
 10 utilisateurs virtuels
-durée : 20 secondes
+20 secondes
+fichier protégé par mot de passe
 ```
 
-Résultats observés :
+Variables utilisées :
 
 ```text
-161 545 requêtes HTTP
-0 % d’erreur
-p95 : 1,44 ms
-environ 8 076,9 requêtes par seconde
-
-Lighthouse après optimisation :
-Performance 91/100
-FCP 2,6 s
-LCP 3,0 s
-TBT 0 ms
-CLS 0
+DOWNLOAD_TOKEN
+DOWNLOAD_PASSWORD
+BASE_URL
 ```
 
-Ces mesures ont été réalisées dans un environnement local de développement
-et ne constituent pas un benchmark de production.
+Commande :
 
-Les résultats et leur analyse sont disponibles dans :
+```bash
+DOWNLOAD_TOKEN='<token>' \
+DOWNLOAD_PASSWORD='<mot-de-passe>' \
+BASE_URL='http://localhost:8080' \
+k6 run performance/download-test.js
+```
+
+Dernier résultat :
+
+```text
+2 569 requêtes
+128,05 requêtes/s
+0 % d'erreur
+5 138 / 5 138 checks réussis
+p95 : 91,47 ms
+temps maximum : 207,4 ms
+```
+
+Seuils :
+
+```text
+http_req_failed < 1 %
+p95 < 1000 ms
+```
+
+Les deux seuils sont respectés dans l'environnement local.
+
+Les résultats ne représentent pas la capacité maximale d'une infrastructure de production.
+
+Documentation :
 
 ```text
 PERF.md
@@ -550,17 +669,34 @@ PERF.md
 
 ---
 
-## 19. Logs structurés
+## 22. Lighthouse
 
-Le backend produit des logs structurés au format JSON.
+Mesure finale sur le build Angular :
 
-Le fichier de logs est :
+```text
+Performance : 90/100
+FCP         : 2,7 s
+LCP         : 3,0 s
+TBT         : 10 ms
+CLS         : 0
+Speed Index : 2,7 s
+```
+
+Lighthouse mesure principalement les performances de rendu côté navigateur, alors que k6 mesure le comportement du serveur sous charge.
+
+---
+
+## 23. Logs
+
+Le backend utilise des logs structurés.
+
+Fichier :
 
 ```text
 backend/logs/datashare.log
 ```
 
-Les principaux événements métier journalisés sont :
+Événements principaux :
 
 ```text
 file_upload
@@ -568,141 +704,121 @@ file_download
 file_delete
 ```
 
-Les logs permettent notamment de suivre :
+Les logs ne doivent pas contenir :
 
-- le type d’opération ;
-- l’identifiant du fichier ;
-- la taille du fichier ;
-- certaines informations utiles au diagnostic.
-
-Les mots de passe, JWT et tokens de téléchargement ne doivent pas être
-écrits dans les logs.
+```text
+mots de passe
+JWT
+tokens de téléchargement
+```
 
 ---
 
-## 20. Maintenance
+## 24. Maintenance
 
-Les procédures de maintenance sont décrites dans :
+Documentation :
 
 ```text
 MAINTENANCE.md
 ```
 
-Elles couvrent notamment :
+Elle couvre notamment :
 
-- le diagnostic d’incidents ;
-- l’analyse des logs ;
-- la correction d’un bug ;
-- les tests de non-régression ;
-- les mises à jour des dépendances ;
-- les contrôles de sécurité ;
-- les tests de performance ;
-- la maintenance de PostgreSQL ;
-- le stockage local des fichiers ;
-- le processus Git.
+- diagnostic ;
+- logs ;
+- tests de non-régression ;
+- dépendances ;
+- PostgreSQL ;
+- stockage ;
+- sécurité ;
+- performance ;
+- migrations Flyway ;
+- Git.
 
 ---
 
-## 21. Utilisation de l’intelligence artificielle
+## 25. Intelligence artificielle
 
-L’intelligence artificielle a été utilisée comme outil d’assistance
-au développement et à l’apprentissage.
+L'intelligence artificielle a été utilisée comme outil d'assistance au développement et à l'apprentissage.
 
-Son utilisation est documentée dans :
+Documentation :
 
 ```text
 AI_USAGE.md
-```
-
-Une revue technique spécifique du code développé avec l’assistance
-de l’IA est disponible dans :
-
-```text
 AI_REVIEW.md
 ```
 
-Le code proposé avec l’aide de l’IA n’a pas été accepté automatiquement.
+Une User Story de téléchargement a été spécifiquement tracée.
 
-Il a été :
+Le code produit avec assistance IA a été :
 
-- relu ;
-- testé ;
-- comparé aux besoins fonctionnels ;
-- corrigé lorsque nécessaire.
+```text
+relu
+compris
+testé
+corrigé
+tracé dans Git
+```
 
-Une anomalie concernant la gestion d’un type MIME invalide pendant
-le téléchargement a notamment été détectée lors de cette revue puis corrigée.
+La revue humaine a notamment permis de traiter un cas de Content-Type invalide avec un fallback :
+
+```text
+application/octet-stream
+```
 
 ---
 
-## 22. Documentation du projet
-
-Les principaux documents du repository sont :
+## 26. Documents
 
 ```text
 README.md
 API.md
-AI_USAGE.md
-AI_REVIEW.md
+PERF.md
 TESTING.md
 SECURITY.md
-PERF.md
 MAINTENANCE.md
-PORTABILITY.md
+AI_USAGE.md
+AI_REVIEW.md
 PERSONAL_DATA.md
+PORTABILITY.md
 ```
-
-Ils couvrent notamment :
-
-- l’installation ;
-- l’utilisation ;
-- l’architecture ;
-- l’API ;
-- les tests ;
-- la sécurité ;
-- les performances ;
-- la maintenance ;
-- l’utilisation de l’IA.
 
 ---
 
-## 23. Structure simplifiée du repository
+## 27. Structure simplifiée
 
 ```text
 DataShare/
-|
-|-- backend/
-|   |-- src/
-|   |-- pom.xml
-|   `-- mvnw
-|
-|-- frontend/
-|   |-- src/
-|   |-- e2e/
-|   |-- public/
-|   |-- package.json
-|   `-- playwright.config.ts
-|
-|-- performance/
-|   `-- download-test.js
-|
-|-- API.md
-|-- AI_USAGE.md
-|-- AI_REVIEW.md
-|-- TESTING.md
-|-- SECURITY.md
-|-- PERF.md
-|-- MAINTENANCE.md
-|-- PORTABILITY.md
-|-- PERSONAL_DATA.md
-`-- README.md
+│
+├── backend/
+│   ├── src/
+│   ├── pom.xml
+│   └── mvnw
+│
+├── frontend/
+│   ├── src/
+│   ├── e2e/
+│   ├── package.json
+│   └── playwright.config.ts
+│
+├── performance/
+│   └── download-test.js
+│
+├── API.md
+├── PERF.md
+├── TESTING.md
+├── SECURITY.md
+├── MAINTENANCE.md
+├── AI_USAGE.md
+├── AI_REVIEW.md
+├── PERSONAL_DATA.md
+├── PORTABILITY.md
+└── README.md
 ```
 
 ---
 
-## 24. Repository GitHub
-
-Le code source du projet est disponible sur :
+## 28. Repository
 
 ```text
 https://github.com/AbdouMESSABIH/DataShare
@@ -710,7 +826,7 @@ https://github.com/AbdouMESSABIH/DataShare
 
 ---
 
-## 25. Auteur
+## 29. Contexte
 
 Projet réalisé dans le cadre de la formation :
 

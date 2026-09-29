@@ -1,59 +1,146 @@
-# Frontend
+# Frontend DataShare
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.27.
+Ce dossier contient l'interface Angular de DataShare.
 
-## Development server
+La documentation générale du projet se trouve dans :
 
-To start a local development server, run:
-
-```bash
-ng serve
+```text
+../README.md
+../API.md
+../TESTING.md
+../PERF.md
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Technologies
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
+```text
+Angular
+TypeScript
+HTML
+SCSS
+Angular TestBed
+Karma
+ESLint
+Playwright
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Installation
+
+Depuis le dossier `frontend` :
 
 ```bash
-ng generate --help
+npm install
 ```
 
-## Building
-
-To build the project run:
+## Serveur de développement
 
 ```bash
-ng build
+npm start
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+L'application est alors accessible sur :
 
-## Running unit tests
+```text
+http://localhost:4200
+```
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+Le backend DataShare doit être démarré séparément sur :
+
+```text
+http://localhost:8080
+```
+
+## Build de production
 
 ```bash
-ng test
+npm run build
 ```
 
-## Running end-to-end tests
+Le build est généré dans :
 
-For end-to-end (e2e) testing, run:
+```text
+dist/frontend/
+```
+
+## Lint
 
 ```bash
-ng e2e
+npx ng lint
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Dernière validation :
 
-## Additional Resources
+```text
+All files pass linting.
+```
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## Tests unitaires
+
+```bash
+npx ng test --watch=false
+```
+
+Dernière validation :
+
+```text
+27 SUCCESS
+```
+
+## Tests End-to-End
+
+DataShare utilise Playwright pour les tests End-to-End.
+
+Le backend et le frontend doivent être démarrés avant leur exécution.
+
+Commande :
+
+```bash
+npx playwright test
+```
+
+Dernière validation :
+
+```text
+3 passed
+```
+
+Les scénarios couvrent notamment :
+
+```text
+parcours complet avec fichier protégé par mot de passe
+connexion avec mauvais mot de passe
+lien de téléchargement invalide
+```
+
+Le parcours principal vérifie :
+
+```text
+Inscription
+→ Connexion
+→ Upload
+→ Mot de passe fichier
+→ Historique
+→ Mauvais mot de passe
+→ Bon mot de passe
+→ Téléchargement
+→ Suppression
+```
+
+## Performance frontend
+
+La mesure finale Lighthouse du build de production est documentée dans :
+
+```text
+../PERF.md
+```
+
+Dernier résultat :
+
+```text
+Performance : 90/100
+FCP         : 2,7 s
+LCP         : 3,0 s
+TBT         : 10 ms
+CLS         : 0
+Speed Index : 2,7 s
+```

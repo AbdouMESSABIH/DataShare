@@ -7,9 +7,10 @@ backend/test-results/
 frontend/node_modules/
 frontend/dist/
 
-# Rapports temporaires Lighthouse
-frontend/lighthouse-performance.html
-frontend/lighthouse-performance.json
+# Rapports Lighthouse générés localement
+frontend/lighthouse*.json
+frontend/lighthouse*.html
+frontend/*.report.html
 
 # Variables sensibles
 .env
