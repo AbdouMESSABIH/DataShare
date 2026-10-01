@@ -178,7 +178,25 @@ Le nouveau scénario utilise seulement 20 téléchargements
 afin de rester sous la limite par token, en utilisant
 un token récent dont le quota n'est pas déjà consommé.
 
-Un test spécifique HTTP 429 reste à effectuer.
+### Vérification réelle du HTTP 429 — 1er octobre 2026
+
+Un test fonctionnel a été exécuté avec 31 téléchargements
+successifs du même fichier protégé, pendant une seule fenêtre
+de limitation.
+
+Résultats observés :
+
+| Requêtes | Résultat |
+|---|---:|
+| 1 à 30 | HTTP 200 |
+| 31 | HTTP 429 |
+| Autres erreurs | 0 |
+| Durée du test | 7 secondes |
+
+Résultat : TEST RATE LIMITING RÉUSSI.
+
+Le filtre refuse bien la 31e requête du même token
+pendant une fenêtre de limitation.
 
 ---
 
@@ -497,14 +515,14 @@ Ce test concerne uniquement les téléchargements protégés.
 Il ne reproduit pas simultanément les inscriptions,
 connexions, téléversements et suppressions.
 
-Le comportement HTTP 429 doit être vérifié séparément.
+Le comportement HTTP 429 a été vérifié séparément et validé.
 
 ---
 
 # 17. Améliorations possibles
 
 - Tester une charge soutenue compatible avec les limites.
-- Vérifier séparément les réponses HTTP 429.
+- Conserver une preuve du test HTTP 429 dans le dossier de validation.
 - Tester différentes tailles de fichiers.
 - Actualiser les résultats Lighthouse.
 - Comparer plusieurs campagnes dans des conditions identiques.
