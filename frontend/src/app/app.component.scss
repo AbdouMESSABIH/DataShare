@@ -195,3 +195,9 @@
     box-sizing: border-box;
   }
 }
+
+
+:host:has(app-home) .nav-login,
+:host:has(app-home) .nav-register {
+  display: inline-flex;
+}
