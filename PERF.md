@@ -7,7 +7,7 @@ L'objectif de cette analyse est d'évaluer les performances de l'application Dat
 - les performances du back-end Spring Boot sous charge avec k6 ;
 - les performances du front-end Angular dans le navigateur avec Lighthouse.
 
-Ce rapport distingue le test k6 du 1er octobre 2026, réalisé après l'ajout des protections du téléchargement, et les mesures Lighthouse de la campagne précédente, qui restent à renouveler sur la dernière interface Angular.
+Ce rapport présente les tests k6 et les nouvelles mesures Lighthouse du 1er octobre 2026 sur l'interface Angular actualisée. Les campagnes précédentes sont conservées à titre historique.
 
 Les tests ont été effectués dans un environnement local de développement.
 
@@ -218,7 +218,7 @@ Le nouveau test constitue un pic court d'environ
 
 # 8. Test de performance front-end avec Lighthouse
 
-Note du 1er octobre 2026 : les résultats Lighthouse ci-dessous correspondent à la campagne précédente. Une nouvelle mesure reste à effectuer après les modifications de l'interface Angular.
+Les sections 9 à 12 conservent les mesures historiques. La nouvelle campagne Mobile et Desktop figure en section 12.1.
 
 
 ## 8.1 Objectif
@@ -401,6 +401,45 @@ Certaines métriques peuvent légèrement varier entre deux exécutions Lighthou
 
 ---
 
+## 12.1 Nouvelle campagne Lighthouse — 1er octobre 2026
+
+Une nouvelle analyse a été réalisée après les dernières
+modifications Angular et l'ajout de la balise meta description.
+
+Conditions :
+- Lighthouse 13.4.0 ;
+- build Angular de production ;
+- URL : http://localhost:4173/ ;
+- mode Navigation ;
+- profils Mobile et Desktop ;
+- aucune alerte d'exécution.
+
+### Scores obtenus
+
+| Catégorie | Mobile | Desktop |
+|---|---:|---:|
+| Performance | 91/100 | 100/100 |
+| Accessibilité | 100/100 | 100/100 |
+| Bonnes pratiques | 100/100 | 100/100 |
+| SEO | 100/100 | 100/100 |
+
+### Métriques de performance
+
+| Métrique | Mobile | Desktop |
+|---|---:|---:|
+| FCP | 2,7 s | 0,5 s |
+| LCP | 2,9 s | 0,6 s |
+| TBT (valeur numérique JSON) | 14 ms | 0 ms |
+| CLS | 0 | 0 |
+| Speed Index | 2,7 s | 0,5 s |
+
+L'audit meta-description est validé sur les deux profils.
+
+Ces mesures locales ponctuelles ne constituent pas
+une garantie de performance en production.
+
+---
+
 # 13. Différence entre k6 et Lighthouse
 
 Les deux outils ne répondent pas au même besoin.
@@ -524,7 +563,7 @@ Le comportement HTTP 429 a été vérifié séparément et validé.
 - Tester une charge soutenue compatible avec les limites.
 - Conserver une preuve du test HTTP 429 dans le dossier de validation.
 - Tester différentes tailles de fichiers.
-- Actualiser les résultats Lighthouse.
+- Répéter les mesures Lighthouse pour observer leur variabilité.
 - Comparer plusieurs campagnes dans des conditions identiques.
 
 ---
@@ -541,11 +580,16 @@ Le comportement HTTP 429 a été vérifié séparément et validé.
 - p95 : 475,39 ms.
 - Seuil p95 inférieur à 1000 ms : respecté.
 
-## Frontend : Lighthouse
+## Frontend : Lighthouse, 1er octobre 2026
 
-Dernière mesure historique : 90/100.
+| Catégorie | Mobile | Desktop |
+|---|---:|---:|
+| Performance | 91/100 | 100/100 |
+| Accessibilité | 100/100 | 100/100 |
+| Bonnes pratiques | 100/100 | 100/100 |
+| SEO | 100/100 | 100/100 |
 
-Cette mesure doit être actualisée sur le dernier build Angular.
+La balise meta description est désormais validée.
 
 ---
 
