@@ -58,7 +58,8 @@ class FileServicePaginationTest {
         fileService =
                 new FileService(
                         storedFileRepository,
-                        userRepository
+                        userRepository,
+                        new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(12)
                 );
     }
 
