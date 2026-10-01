@@ -118,10 +118,13 @@ export class UploadComponent {
     }
 
 
-    if (!this.password.trim()) {
+    if (
+      this.password.trim().length > 0
+      && this.password.trim().length < 6
+    ) {
 
       this.errorMessage =
-        'Veuillez choisir un mot de passe';
+        'Le mot de passe doit contenir au moins 6 caractères';
 
       return;
     }

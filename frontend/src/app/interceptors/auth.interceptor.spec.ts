@@ -11,167 +11,171 @@ import {
   provideHttpClientTesting
 } from '@angular/common/http/testing';
 
-import {
-  authInterceptor
-} from './auth.interceptor';
+import { Router } from '@angular/router';
 
+import { authInterceptor } from './auth.interceptor';
+import { environment } from '../../environments/environment';
 
-describe('authInterceptor', () => {
+describe('AuthInterceptor', () => {
 
-  let http:
-    HttpClient;
-
-  let httpMock:
-    HttpTestingController;
-
+  let httpMock: HttpTestingController;
+  let router: jasmine.SpyObj<Router>;
 
   beforeEach(() => {
 
-    localStorage.clear();
+    localStorage.removeItem('token');
 
+    router = jasmine.createSpyObj<Router>(
+      'Router',
+      ['navigate']
+    );
 
     TestBed.configureTestingModule({
       providers: [
-
         provideHttpClient(
-          withInterceptors([
-            authInterceptor
-          ])
+          withInterceptors([authInterceptor])
         ),
-
-        provideHttpClientTesting()
-
+        provideHttpClientTesting(),
+        {
+          provide: Router,
+          useValue: router
+        }
       ]
     });
 
-
-    http =
-      TestBed.inject(HttpClient);
-
-    httpMock =
-      TestBed.inject(HttpTestingController);
+    httpMock = TestBed.inject(HttpTestingController);
   });
-
 
   afterEach(() => {
-
     httpMock.verify();
-
-    localStorage.clear();
+    localStorage.removeItem('token');
   });
 
+  it('should clear the expired JWT and redirect after HTTP 401', () => {
 
-  it(
-    'should add the JWT token to a protected API request',
-    () => {
+    localStorage.setItem('token', 'expired-token');
 
-      localStorage.setItem(
-        'token',
-        'fake-jwt-token'
-      );
+    const http = TestBed.inject(
+      HttpClient
+    );
 
-
-      http
-        .get(
-          'http://localhost:8080/api/files'
-        )
-        .subscribe();
-
-
-      const request =
-        httpMock.expectOne(
-          'http://localhost:8080/api/files'
-        );
-
-
-      expect(
-        request.request.headers.get(
-          'Authorization'
-        )
-      ).toBe(
-        'Bearer fake-jwt-token'
-      );
-
-
-      request.flush([]);
-    }
-  );
-
-
-  it(
-    'should not add the JWT token to the login request',
-    () => {
-
-      localStorage.setItem(
-        'token',
-        'fake-jwt-token'
-      );
-
-
-      http
-        .post(
-          'http://localhost:8080/api/auth/login',
-          {}
-        )
-        .subscribe();
-
-
-      const request =
-        httpMock.expectOne(
-          'http://localhost:8080/api/auth/login'
-        );
-
-
-      expect(
-        request.request.headers.has(
-          'Authorization'
-        )
-      ).toBeFalse();
-
-
-      request.flush({
-        token: 'jwt'
+    http.get(`${environment.apiUrl}/files`)
+      .subscribe({
+        error: () => undefined
       });
-    }
-  );
 
+    const request = httpMock.expectOne(
+      `${environment.apiUrl}/files`
+    );
 
-  it(
-    'should not add the JWT token to a public download request',
-    () => {
+    expect(
+      request.request.headers.get('Authorization')
+    ).toBe('Bearer expired-token');
 
-      localStorage.setItem(
-        'token',
-        'fake-jwt-token'
-      );
+    request.flush(
+      { error: 'Unauthorized' },
+      {
+        status: 401,
+        statusText: 'Unauthorized'
+      }
+    );
 
+    expect(localStorage.getItem('token')).toBeNull();
 
-      http
-        .get(
-          'http://localhost:8080/api/download/test-token'
-        )
-        .subscribe();
+    expect(router.navigate)
+      .toHaveBeenCalledWith(['/login']);
+  });
 
+  it('should not clear the session on a public HTTP 401', () => {
 
-      const request =
-        httpMock.expectOne(
-          'http://localhost:8080/api/download/test-token'
-        );
+    localStorage.setItem('token', 'existing-token');
 
+    const http = TestBed.inject(
+      HttpClient
+    );
 
-      expect(
-        request.request.headers.has(
-          'Authorization'
-        )
-      ).toBeFalse();
-
-
-      request.flush({
-        originalName: 'test.txt',
-        size: 10,
-        contentType: 'text/plain',
-        expiresAt: '2026-09-23T12:00:00'
+    http.post(`${environment.apiUrl}/auth/login`, {})
+      .subscribe({
+        error: () => undefined
       });
-    }
-  );
+
+    const request = httpMock.expectOne(
+      `${environment.apiUrl}/auth/login`
+    );
+
+    expect(
+      request.request.headers.has('Authorization')
+    ).toBeFalse();
+
+    request.flush(
+      { error: 'Invalid credentials' },
+      {
+        status: 401,
+        statusText: 'Unauthorized'
+      }
+    );
+
+    expect(localStorage.getItem('token'))
+      .toBe('existing-token');
+
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('should add the JWT token to a protected API request', () => {
+    localStorage.setItem('token', 'fake-jwt-token');
+
+    const http = TestBed.inject(HttpClient);
+
+    http.get(`${environment.apiUrl}/files`).subscribe();
+
+    const request = httpMock.expectOne(
+      `${environment.apiUrl}/files`
+    );
+
+    expect(request.request.headers.get('Authorization'))
+      .toBe('Bearer fake-jwt-token');
+
+    request.flush([]);
+  });
+
+  it('should not add the JWT token to the login request', () => {
+    localStorage.setItem('token', 'fake-jwt-token');
+
+    const http = TestBed.inject(HttpClient);
+
+    http.post(`${environment.apiUrl}/auth/login`, {}).subscribe();
+
+    const request = httpMock.expectOne(
+      `${environment.apiUrl}/auth/login`
+    );
+
+    expect(request.request.headers.has('Authorization'))
+      .toBeFalse();
+
+    request.flush({ token: 'jwt' });
+  });
+
+  it('should not add the JWT token to a public download request', () => {
+    localStorage.setItem('token', 'fake-jwt-token');
+
+    const http = TestBed.inject(HttpClient);
+
+    http.get(`${environment.apiUrl}/download/test-token`).subscribe();
+
+    const request = httpMock.expectOne(
+      `${environment.apiUrl}/download/test-token`
+    );
+
+    expect(request.request.headers.has('Authorization'))
+      .toBeFalse();
+
+    request.flush({
+      originalName: 'test.txt',
+      size: 10,
+      contentType: 'text/plain',
+      expiresAt: '2026-09-23T12:00:00',
+      passwordProtected: false
+    });
+  });
+
 });

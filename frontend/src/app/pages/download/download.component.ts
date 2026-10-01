@@ -119,7 +119,10 @@ export class DownloadComponent
     this.downloadErrorMessage = '';
 
 
-    if (!this.password.trim()) {
+    if (
+      this.fileInfo?.passwordProtected
+      && !this.password.trim()
+    ) {
 
       this.downloadErrorMessage =
         'Veuillez saisir le mot de passe';

@@ -159,6 +159,13 @@
 
             <strong>
               {{ file.originalName }}
+
+              <span
+                *ngIf="file.passwordProtected"
+                role="img"
+                aria-label="Fichier protégé par mot de passe"
+                title="Fichier protégé par mot de passe"
+              >🔒</span>
             </strong>
 
             <span>

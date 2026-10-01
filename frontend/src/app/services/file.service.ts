@@ -37,6 +37,8 @@ export interface DownloadInfoResponse {
   contentType: string;
 
   expiresAt: string;
+
+  passwordProtected: boolean;
 }
 
 
@@ -55,6 +57,8 @@ export interface FileHistoryResponse {
   createdAt: string;
 
   expiresAt: string;
+
+  passwordProtected?: boolean;
 }
 
 

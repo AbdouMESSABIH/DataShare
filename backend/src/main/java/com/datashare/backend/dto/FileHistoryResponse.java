@@ -11,6 +11,7 @@ public class FileHistoryResponse {
     private final String downloadToken;
     private final LocalDateTime createdAt;
     private final LocalDateTime expiresAt;
+    private final boolean passwordProtected;
 
     public FileHistoryResponse(
             Long id,
@@ -19,7 +20,8 @@ public class FileHistoryResponse {
             String contentType,
             String downloadToken,
             LocalDateTime createdAt,
-            LocalDateTime expiresAt
+            LocalDateTime expiresAt,
+            boolean passwordProtected
     ) {
         this.id = id;
         this.originalName = originalName;
@@ -28,6 +30,7 @@ public class FileHistoryResponse {
         this.downloadToken = downloadToken;
         this.createdAt = createdAt;
         this.expiresAt = expiresAt;
+        this.passwordProtected = passwordProtected;
     }
 
     public Long getId() {
@@ -56,5 +59,9 @@ public class FileHistoryResponse {
 
     public LocalDateTime getExpiresAt() {
         return expiresAt;
+    }
+
+    public boolean isPasswordProtected() {
+        return passwordProtected;
     }
 }

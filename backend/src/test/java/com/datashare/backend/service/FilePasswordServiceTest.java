@@ -114,6 +114,35 @@ class FilePasswordServiceTest {
     }
 
 
+    @Test
+    void uploadShouldRejectPasswordShorterThanSixCharacters() {
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "document.pdf",
+                "application/pdf",
+                "%PDF-1.7\\nTest".getBytes(StandardCharsets.UTF_8)
+        );
+
+        for (String password : List.of("12345", "  abc  ")) {
+
+            ResponseStatusException exception = assertThrows(
+                    ResponseStatusException.class,
+                    () -> fileService.upload(
+                            file,
+                            "test@datashare.fr",
+                            1,
+                            password
+                    )
+            );
+
+            assertEquals(400, exception.getStatusCode().value());
+        }
+
+        verifyNoInteractions(userRepository, storedFileRepository);
+    }
+
+
     /*
      * TEST 1
      *

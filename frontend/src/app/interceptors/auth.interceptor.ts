@@ -1,6 +1,11 @@
 import {
+  HttpErrorResponse,
   HttpInterceptorFn
 } from '@angular/common/http';
+
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { catchError, throwError } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 
@@ -38,5 +43,21 @@ export const authInterceptor: HttpInterceptorFn =
       });
 
 
-    return next(authenticatedRequest);
+    const router = inject(Router);
+
+    return next(authenticatedRequest).pipe(
+      catchError((error: HttpErrorResponse) => {
+
+        if (
+          error.status === 401
+          && localStorage.getItem('token') === token
+        ) {
+          localStorage.removeItem('token');
+
+          void router.navigate(['/login']);
+        }
+
+        return throwError(() => error);
+      })
+    );
   };

@@ -64,7 +64,10 @@ public class DownloadController {
                                 .getContentType(),
 
                         storedFile
-                                .getExpiresAt()
+                                .getExpiresAt(),
+
+                        storedFile.getPasswordHash() != null
+                                && !storedFile.getPasswordHash().isBlank()
                 );
 
 

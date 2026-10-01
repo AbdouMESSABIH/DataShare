@@ -73,7 +73,8 @@ describe('DownloadComponent', () => {
             originalName: 'document.pdf',
             size: 1000,
             contentType: 'application/pdf',
-            expiresAt: '2026-09-23T12:00:00'
+            expiresAt: '2026-09-23T12:00:00',
+            passwordProtected: true
           })
         );
 
@@ -252,6 +253,14 @@ describe('DownloadComponent', () => {
       component.password =
         '';
 
+      component.fileInfo = {
+        originalName: 'document.pdf',
+        size: 100,
+        contentType: 'application/pdf',
+        expiresAt: '2026-09-30T12:00:00',
+        passwordProtected: true
+      };
+
 
       component.download();
 
@@ -266,6 +275,40 @@ describe('DownloadComponent', () => {
       expect(
         fileService.downloadFile
       ).not.toHaveBeenCalled();
+    }
+  );
+
+
+  it(
+    'should allow a public file without a password',
+    () => {
+
+      fileService.downloadFile.and.returnValue(
+        of(new HttpResponse<Blob>({
+          body: null,
+          status: 200
+        }))
+      );
+
+      const component = createComponent('public-token');
+
+      component.token = 'public-token';
+      component.password = '';
+
+      component.fileInfo = {
+        originalName: 'public.pdf',
+        size: 100,
+        contentType: 'application/pdf',
+        expiresAt: '2026-09-30T12:00:00',
+        passwordProtected: false
+      };
+
+      component.download();
+
+      expect(fileService.downloadFile)
+        .toHaveBeenCalledWith('public-token', '');
+
+      expect(component.downloading).toBeFalse();
     }
   );
 
@@ -311,7 +354,8 @@ describe('DownloadComponent', () => {
         originalName: 'document.pdf',
         size: 4,
         contentType: 'application/pdf',
-        expiresAt: '2026-09-30T12:00:00'
+        expiresAt: '2026-09-30T12:00:00',
+        passwordProtected: true
       };
 
 

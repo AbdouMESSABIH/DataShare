@@ -225,6 +225,25 @@ public class FileService {
         }
 
 
+        // Un mot de passe est facultatif.
+        // S'il est renseigné, il doit avoir au moins 6 caractères utiles.
+        if (password != null && !password.isBlank()) {
+
+            String normalizedPassword = password.strip();
+
+            if (normalizedPassword.codePointCount(
+                    0,
+                    normalizedPassword.length()
+            ) < 6) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Le mot de passe doit contenir au moins 6 caractères"
+                );
+            }
+        }
+
+
         User owner =
                 userRepository
                         .findByEmail(email)
@@ -887,7 +906,9 @@ public class FileService {
                                                 storedFile.getContentType(),
                                                 storedFile.getDownloadToken(),
                                                 storedFile.getCreatedAt(),
-                                                storedFile.getExpiresAt()
+                                                storedFile.getExpiresAt(),
+                                                storedFile.getPasswordHash() != null
+                                                        && !storedFile.getPasswordHash().isBlank()
                                         )
                         )
                         .toList();

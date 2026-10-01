@@ -26,6 +26,9 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter
             jwtAuthenticationFilter;
 
+    private final RateLimitFilter rateLimitFilter =
+            new RateLimitFilter();
+
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter
@@ -81,6 +84,11 @@ public class SecurityConfig {
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
+                )
+
+                .addFilterBefore(
+                        rateLimitFilter,
+                        JwtAuthenticationFilter.class
                 );
 
 

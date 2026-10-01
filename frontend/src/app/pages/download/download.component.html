@@ -94,7 +94,10 @@
       </div>
 
 
-      <div class="form-group">
+      <div
+        class="form-group"
+        *ngIf="fileInfo.passwordProtected"
+      >
 
         <label for="downloadPassword">
           Mot de passe

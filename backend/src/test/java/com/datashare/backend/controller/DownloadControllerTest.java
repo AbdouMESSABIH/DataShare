@@ -139,6 +139,41 @@ class DownloadControllerTest {
 
 
     @Test
+    void shouldIndicateWhenFileIsPasswordProtected() {
+
+        StoredFile protectedFile =
+                createStoredFile("application/pdf");
+
+        protectedFile.setPasswordHash("bcrypt-test-hash");
+
+        when(fileService.getByDownloadToken("protected-token"))
+                .thenReturn(protectedFile);
+
+        DownloadInfoResponse protectedInfo =
+                downloadController
+                        .getDownloadInfo("protected-token")
+                        .getBody();
+
+        assertNotNull(protectedInfo);
+        assertTrue(protectedInfo.isPasswordProtected());
+
+        StoredFile publicFile =
+                createStoredFile("application/pdf");
+
+        when(fileService.getByDownloadToken("public-token"))
+                .thenReturn(publicFile);
+
+        DownloadInfoResponse publicInfo =
+                downloadController
+                        .getDownloadInfo("public-token")
+                        .getBody();
+
+        assertNotNull(publicInfo);
+        assertFalse(publicInfo.isPasswordProtected());
+    }
+
+
+    @Test
     void shouldDownloadFileWithPassword()
             throws Exception {
 

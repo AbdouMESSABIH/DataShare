@@ -5,208 +5,175 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-
 import java.util.concurrent.ConcurrentHashMap;
 
+public class RateLimitFilter extends OncePerRequestFilter {
 
-@Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
-public class RateLimitFilter
-        extends OncePerRequestFilter {
+    private static final long WINDOW_MILLIS = 60_000L;
 
-    private static final long WINDOW_MILLIS =
-            60_000L;
+    private static final int LOGIN_LIMIT = 10;
+    private static final int UPLOAD_LIMIT = 20;
 
+    private static final int DOWNLOAD_IP_LIMIT = 60;
+    private static final int DOWNLOAD_TOKEN_LIMIT = 30;
 
-    private static final int LOGIN_LIMIT =
-            10;
+    private static final String DOWNLOAD_PREFIX = "/api/download/";
+    private static final String DOWNLOAD_SUFFIX = "/file";
 
-
-    private static final int UPLOAD_LIMIT =
-            20;
-
-
-    private final ConcurrentHashMap<
-            String,
-            WindowCounter
-            > counters =
+    private final ConcurrentHashMap<String, WindowCounter> counters =
             new ConcurrentHashMap<>();
 
-
     @Override
-    protected boolean shouldNotFilter(
-            HttpServletRequest request
-    ) {
+    protected boolean shouldNotFilter(HttpServletRequest request) {
 
-        if (
-                !"POST".equalsIgnoreCase(
-                        request.getMethod()
-                )
-        ) {
+        String method = request.getMethod();
+        String path = request.getRequestURI();
 
-            return true;
+        if ("POST".equalsIgnoreCase(method)) {
+            return !path.equals("/api/auth/login")
+                    && !path.equals("/api/files/upload");
         }
 
+        if ("GET".equalsIgnoreCase(method)) {
+            return !isDownloadFilePath(path);
+        }
 
-        String path =
-                request.getRequestURI();
-
-
-        return !path.equals(
-                "/api/auth/login"
-        )
-                && !path.equals(
-                        "/api/files/upload"
-                );
+        return true;
     }
-
 
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain
-    )
-            throws ServletException,
-            IOException {
+    ) throws ServletException, IOException {
 
-        String path =
-                request.getRequestURI();
-
-
-        int limit =
-                path.equals(
-                        "/api/auth/login"
-                )
-                        ? LOGIN_LIMIT
-                        : UPLOAD_LIMIT;
-
+        String path = request.getRequestURI();
+        String clientAddress = request.getRemoteAddr();
 
         long currentWindow =
-                System.currentTimeMillis()
-                        / WINDOW_MILLIS;
+                System.currentTimeMillis() / WINDOW_MILLIS;
 
+        if (path.equals("/api/auth/login")) {
 
-        String clientAddress =
-                request.getRemoteAddr();
+            if (increment("login|" + clientAddress, currentWindow)
+                    > LOGIN_LIMIT) {
+                reject(response);
+                return;
+            }
 
+        } else if (path.equals("/api/files/upload")) {
 
-        String key =
-                path
-                        + "|"
-                        + clientAddress;
+            if (increment("upload|" + clientAddress, currentWindow)
+                    > UPLOAD_LIMIT) {
+                reject(response);
+                return;
+            }
 
+        } else if (isDownloadFilePath(path)) {
 
-        WindowCounter counter =
-                counters.compute(
-                        key,
-                        (
-                                ignored,
-                                previous
-                        ) -> {
+            // Première protection : nombre total par adresse IP.
+            if (increment(
+                    "download-ip|" + clientAddress,
+                    currentWindow
+            ) > DOWNLOAD_IP_LIMIT) {
 
-                            if (
-                                    previous == null
-                                    || previous.window()
-                                    != currentWindow
-                            ) {
+                reject(response);
+                return;
+            }
 
-                                return new WindowCounter(
-                                        currentWindow,
-                                        1
-                                );
-                            }
+            // Deuxième protection : limite globale du token.
+            // Le token n'est jamais envoyé dans les logs.
+            String token = path.substring(
+                    DOWNLOAD_PREFIX.length(),
+                    path.length() - DOWNLOAD_SUFFIX.length()
+            );
 
+            if (increment(
+                    "download-token|" + token,
+                    currentWindow
+            ) > DOWNLOAD_TOKEN_LIMIT) {
 
-                            return new WindowCounter(
-                                    currentWindow,
-                                    previous.count() + 1
-                            );
-                        }
-                );
+                reject(response);
+                return;
+            }
+        }
 
+        cleanupOldCounters(currentWindow);
 
-        cleanupOldCounters(
-                currentWindow
+        filterChain.doFilter(request, response);
+    }
+
+    private boolean isDownloadFilePath(String path) {
+
+        if (!path.startsWith(DOWNLOAD_PREFIX)
+                || !path.endsWith(DOWNLOAD_SUFFIX)) {
+            return false;
+        }
+
+        if (path.length() <= DOWNLOAD_PREFIX.length()
+                + DOWNLOAD_SUFFIX.length()) {
+            return false;
+        }
+
+        String token = path.substring(
+                DOWNLOAD_PREFIX.length(),
+                path.length() - DOWNLOAD_SUFFIX.length()
         );
 
+        return !token.isBlank() && !token.contains("/");
+    }
 
-        if (
-                counter.count()
-                > limit
-        ) {
+    private int increment(String key, long currentWindow) {
 
-            response.setStatus(
-                    429
-            );
+        WindowCounter result = counters.compute(
+                key,
+                (ignored, previous) -> {
 
-            response.setContentType(
-                    "application/json"
-            );
+                    if (previous == null
+                            || previous.window() != currentWindow) {
 
-            response.setCharacterEncoding(
-                    "UTF-8"
-            );
+                        return new WindowCounter(currentWindow, 1);
+                    }
 
-            response.setHeader(
-                    "Retry-After",
-                    "60"
-            );
-
-
-            response
-                    .getWriter()
-                    .write(
-                            """
-                            {"error":"Trop de requêtes. Réessayez dans une minute."}
-                            """
+                    return new WindowCounter(
+                            currentWindow,
+                            previous.count() + 1
                     );
+                }
+        );
 
+        return result.count();
+    }
 
-            return;
-        }
+    private void reject(HttpServletResponse response)
+            throws IOException {
 
+        response.setStatus(429);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.setHeader("Retry-After", "60");
+        response.setHeader("Cache-Control", "no-store");
 
-        filterChain.doFilter(
-                request,
-                response
+        response.getWriter().write(
+                "{\"error\":\"Trop de requêtes. Réessayez dans une minute.\"}"
         );
     }
 
+    private void cleanupOldCounters(long currentWindow) {
 
-    private void cleanupOldCounters(
-            long currentWindow
-    ) {
-
-        if (
-                counters.size()
-                < 10_000
-        ) {
-
+        if (counters.size() < 10_000) {
             return;
         }
 
-
-        counters.entrySet()
-                .removeIf(
-                        entry ->
-                                entry
-                                        .getValue()
-                                        .window()
-                                        < currentWindow - 1
-                );
+        counters.entrySet().removeIf(
+                entry -> entry.getValue().window() < currentWindow - 1
+        );
     }
 
-
-    private record WindowCounter(
-            long window,
-            int count
-    ) {
+    private record WindowCounter(long window, int count) {
     }
 }

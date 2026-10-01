@@ -77,6 +77,10 @@ class FileServicePaginationTest {
         ).thenReturn(1L);
 
         when(
+                storedFile.getPasswordHash()
+        ).thenReturn("bcrypt-test-hash");
+
+        when(
                 storedFile.getOriginalName()
         ).thenReturn(
                 "test.txt"
@@ -158,6 +162,13 @@ class FileServicePaginationTest {
                 result.getContent()
                         .getFirst()
                         .getOriginalName()
+        );
+
+        assertEquals(
+                true,
+                result.getContent()
+                        .getFirst()
+                        .isPasswordProtected()
         );
 
 
