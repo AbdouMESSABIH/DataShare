@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+import { AuthService } from './services/auth.service';
 
 import {
   RouterLink,
@@ -18,4 +20,14 @@ import {
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
+
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
+  logout(): void {
+    this.authService.logout();
+    void this.router.navigate(['/login']);
+  }
 }

@@ -258,13 +258,19 @@
 }
 
 .file-main strong {
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  white-space: nowrap;
-
+  overflow-wrap: anywhere;
+  white-space: normal;
   font-size: 14px;
+}
+
+.expiry-status {
+  display: inline-block;
+  margin-left: 5px;
+  color: var(--ds-success);
+}
+
+.expiry-status.expired {
+  color: var(--ds-error);
 }
 
 .file-main span {

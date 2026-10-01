@@ -221,6 +221,13 @@
                   file.expiresAt
                     | date:'dd/MM/yyyy'
                 }}
+
+                <span
+                  class="expiry-status"
+                  [class.expired]="isExpired(file.expiresAt)"
+                >
+                  {{ isExpired(file.expiresAt) ? 'Expiré' : 'Actif' }}
+                </span>
               </strong>
 
             </div>

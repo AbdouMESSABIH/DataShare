@@ -45,7 +45,8 @@
   gap: 10px;
 }
 
-.navigation a {
+.navigation a,
+.navigation button {
   display: none;
 
   min-height: 42px;
@@ -70,7 +71,8 @@
     transform 0.15s ease;
 }
 
-.navigation a:hover {
+.navigation a:hover,
+.navigation button:hover {
   background: var(--ds-black);
   transform: translateY(-1px);
 }
@@ -95,6 +97,17 @@
   display: inline-flex;
 }
 
+:host:has(app-upload) .nav-logout,
+:host:has(app-history) .nav-logout {
+  display: inline-flex;
+}
+
+.navigation button {
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+
 .app-content {
   min-height: calc(100vh - 76px);
 }
@@ -114,7 +127,8 @@
     font-size: 29px;
   }
 
-  .navigation a {
+  .navigation a,
+  .navigation button {
     min-height: 40px;
 
     padding: 0 14px;

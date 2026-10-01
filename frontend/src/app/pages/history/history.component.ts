@@ -179,6 +179,11 @@ export class HistoryComponent
   }
 
 
+  isExpired(expiresAt: string): boolean {
+    return new Date(expiresAt).getTime() <= Date.now();
+  }
+
+
   getShareUrl(
     token: string
   ): string {
