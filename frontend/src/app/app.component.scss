@@ -4,7 +4,9 @@
 }
 
 .app-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 
   background:
     linear-gradient(
@@ -109,7 +111,8 @@
 }
 
 .app-content {
-  min-height: calc(100vh - 76px);
+  flex: 1;
+  min-height: 0;
 }
 
 
@@ -137,7 +140,7 @@
   }
 
   .app-content {
-    min-height: calc(100vh - 72px);
+    min-height: 0;
   }
 }
 
@@ -228,5 +231,26 @@
   .app-footer {
     flex-direction: column;
     justify-content: center;
+  }
+}
+
+
+/* Correction du menu mobile ouvert */
+
+@media (max-width: 600px) {
+
+  .app-header:has(.navigation.mobile-open) {
+    height: auto;
+    min-height: 72px;
+    flex-wrap: wrap;
+    padding-top: 15px;
+    padding-bottom: 12px;
+  }
+
+  .navigation.mobile-open {
+    position: static;
+    order: 3;
+    flex-basis: 100%;
+    width: 100%;
   }
 }

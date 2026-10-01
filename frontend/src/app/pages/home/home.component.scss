@@ -1,5 +1,5 @@
 .visitor-home {
-  min-height: calc(100vh - 76px);
+  min-height: calc(100dvh - 76px - 64px);
   padding: 105px 24px 75px;
 
   display: flex;
@@ -49,7 +49,7 @@ h1 {
   position: absolute;
   top: 38px;
 
-  color: var(--ds-dark);
+  color: var(--ds-orange);
   font-size: 24px;
   font-weight: 900;
 }
@@ -78,7 +78,7 @@ h1 {
 
 @media (max-width: 600px) {
   .visitor-home {
-    min-height: calc(100vh - 72px);
+    min-height: calc(100dvh - 72px - 72px);
     padding-top: 85px;
   }
 }
