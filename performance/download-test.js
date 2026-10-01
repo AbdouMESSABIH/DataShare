@@ -2,8 +2,14 @@ import http from 'k6/http';
 import { check } from 'k6';
 
 export const options = {
-    vus: 10,
-    duration: '20s',
+    scenarios: {
+        protected_download: {
+            executor: 'shared-iterations',
+            vus: 10,
+            iterations: 20,
+            maxDuration: '60s',
+        },
+    },
 
     thresholds: {
         http_req_failed: ['rate<0.01'],

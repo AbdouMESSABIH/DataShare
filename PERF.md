@@ -1,13 +1,13 @@
 # Rapport de performance - DataShare
 
-## 1. Objectif
+# 1. Objectif
 
 L'objectif de cette analyse est d'évaluer les performances de l'application DataShare sur deux aspects complémentaires :
 
 - les performances du back-end Spring Boot sous charge avec k6 ;
 - les performances du front-end Angular dans le navigateur avec Lighthouse.
 
-Les mesures présentées dans ce document ont été réalisées sur la version actuelle de l'application, incluant notamment la protection des fichiers par mot de passe.
+Ce rapport distingue le test k6 du 1er octobre 2026, réalisé après l'ajout des protections du téléchargement, et les mesures Lighthouse de la campagne précédente, qui restent à renouveler sur la dernière interface Angular.
 
 Les tests ont été effectués dans un environnement local de développement.
 
@@ -54,285 +54,154 @@ PostgreSQL et le stockage des fichiers sont locaux.
 
 ## 3.1 Objectif
 
-Le test k6 permet d'observer le comportement du back-end lorsque plusieurs utilisateurs effectuent simultanément des téléchargements.
+Mesurer les performances du téléchargement protégé par mot
+de passe avec k6.
 
-Le scénario mesure notamment :
+## 3.2 Configuration du scénario
 
-```text
-temps de réponse
-taux d'erreur
-nombre de requêtes
-débit
-validation fonctionnelle des réponses
-```
+Date : 1er octobre 2026.
 
----
+- 10 utilisateurs virtuels (VUs).
+- 20 itérations partagées au total.
+- Durée maximale configurée : 60 secondes.
+- Endpoint : GET /api/download/{token}/file.
+- Mot de passe transmis avec X-Download-Password.
+- Vérification BCrypt côté serveur (coût 12).
 
-## 3.2 Endpoint testé
+Le scénario tient compte des nouvelles protections :
+60 téléchargements/minute/IP et 30/minute/token.
 
-L'endpoint utilisé est :
+## 3.3 Seuils et vérifications
 
-```text
-GET /api/download/{token}/file
-```
+Seuils de performance configurés dans k6 :
 
-Le back-end est accessible sur :
+- http_req_failed inférieur à 1 %.
+- http_req_duration p95 inférieur à 1 000 ms.
 
-```text
-http://localhost:8080
-```
+Vérifications fonctionnelles exécutées à chaque téléchargement :
 
-Le fichier utilisé pour le test est protégé par mot de passe.
+- statut HTTP 200 ;
+- fichier téléchargé non vide.
 
-Le mot de passe est envoyé dans l'en-tête HTTP :
+## 3.4 Résultats réels
 
-```text
-X-Download-Password
-```
+| Indicateur | Résultat |
+|---|---:|
+| Téléchargements | 20/20 |
+| Vérifications réussies | 40/40 |
+| Erreurs HTTP | 0 % |
+| Temps moyen | 348,74 ms |
+| Temps médian | 316,14 ms |
+| p90 | 474,06 ms |
+| p95 | 475,39 ms |
+| Temps minimal | 222,52 ms |
+| Temps maximal | 476,74 ms |
+| Débit observé | 25,136 req/s |
+| Durée effective | environ 0,8 seconde |
+| Code retour k6 | 0 |
 
-Le scénario testé correspond donc au fonctionnement actuel de DataShare.
+Les deux seuils configurés sont respectés.
 
----
+## 3.5 Interprétation
 
-## 3.3 Scénario k6
+Les 20 téléchargements protégés ont réussi.
 
-Configuration :
+Ce scénario mesure un pic court et non une charge
+soutenue de 20 secondes.
 
-```text
-10 utilisateurs virtuels simultanés
-20 secondes de test
-téléchargement répété d'un fichier existant
-fichier protégé par mot de passe
-```
+L'ancienne campagne (2569 requêtes, p95 de 91,47 ms)
+a été réalisée avant les dernières modifications de sécurité.
 
-Chaque utilisateur virtuel effectue continuellement :
+Ces deux campagnes ne sont pas directement comparables.
 
-```text
-GET /api/download/{token}/file
-```
+## 3.6 Reproduction
 
-avec :
+Exécuter performance/download-test.js avec les variables :
 
-```text
-X-Download-Password: <mot-de-passe>
-```
+- DOWNLOAD_TOKEN : token valide et récent.
+- DOWNLOAD_PASSWORD : mot de passe du fichier.
+- BASE_URL : http://localhost:8080.
 
-Pendant chaque requête, deux vérifications fonctionnelles sont effectuées :
+Les identifiants ne doivent pas être enregistrés dans Git.
 
-```text
-statut HTTP = 200
-fichier téléchargé non vide
-```
-
----
-
-## 3.4 Commande utilisée
-
-Le test est exécuté avec des variables d'environnement afin de ne pas stocker le token et le mot de passe directement dans le script.
-
-Exemple :
+Exemple de commande (avec un token récent) :
 
 ```bash
-DOWNLOAD_TOKEN='<token>' \
-DOWNLOAD_PASSWORD='<mot-de-passe>' \
-BASE_URL='http://localhost:8080' \
+DOWNLOAD_TOKEN="<token-valide>" \
+DOWNLOAD_PASSWORD="<mot-de-passe>" \
+BASE_URL="http://localhost:8080" \
 k6 run performance/download-test.js
 ```
 
----
-
-# 4. Seuils de performance k6
-
-Deux seuils ont été définis dans le script.
-
-## Taux d'erreur
-
-```text
-http_req_failed < 1 %
-```
-
-Cela signifie que moins de 1 % des requêtes HTTP peuvent échouer.
-
-## Temps de réponse p95
-
-```text
-http_req_duration p(95) < 1000 ms
-```
-
-Cela signifie qu'au moins 95 % des requêtes doivent terminer en moins d'une seconde.
-
-Ces seuils permettent d'avoir un critère objectif pour déterminer si le scénario respecte les attentes définies.
 
 ---
 
-# 5. Résultat final k6
+# 4. Méthodologie k6
 
-Le test final a été exécuté avec :
+Le test utilise 10 utilisateurs virtuels et 20 itérations
+partagées au total (shared-iterations).
 
-```text
-10 VUs
-20 secondes
-fichier protégé par mot de passe
-```
+Chaque itération effectue un téléchargement protégé.
 
-Résultats obtenus :
-
-```text
-Requêtes HTTP : 2 569
-
-Débit :
-128,05 requêtes/s
-
-Checks :
-5 138 / 5 138 réussis
-
-Checks réussis :
-100 %
-
-Checks échoués :
-0 %
-
-Taux d'erreur HTTP :
-0 %
-
-Temps moyen :
-77,84 ms
-
-Temps médian :
-81,57 ms
-
-p90 :
-89,61 ms
-
-p95 :
-91,47 ms
-
-Temps maximal :
-207,4 ms
-```
+Deux vérifications sont réalisées :
+- statut HTTP 200 ;
+- contenu téléchargé non vide.
 
 ---
 
-## 5.1 Résultat des checks
+# 5. Analyse des résultats k6
 
-Les deux validations fonctionnelles ont réussi pendant tout le test :
+Le test du 1er octobre 2026 a obtenu :
 
-```text
-✓ status HTTP 200
-✓ fichier non vide
-```
+- 20 téléchargements réussis ;
+- 40 vérifications réussies sur 40 ;
+- 0 % d'erreurs HTTP ;
+- temps moyen : 348,74 ms ;
+- p95 : 475,39 ms.
 
-Nombre total de checks :
-
-```text
-5 138
-```
-
-Nombre de checks réussis :
-
-```text
-5 138
-```
-
-Nombre de checks échoués :
-
-```text
-0
-```
+Les seuils configurés sont respectés :
+- taux d'erreur inférieur à 1 % ;
+- p95 inférieur à 1 000 ms.
 
 ---
 
-## 5.2 Validation des seuils
+# 6. Limitations de téléchargement
 
-### Taux d'erreur
+Le backend applique les protections suivantes :
 
-Seuil défini :
+- 60 téléchargements par minute et par IP ;
+- 30 téléchargements par minute et par token.
 
-```text
-rate < 1 %
-```
+Une réponse HTTP 429 indique que la limite est atteinte.
 
-Résultat :
+Le nouveau scénario utilise seulement 20 téléchargements
+afin de rester sous la limite par token, en utilisant
+un token récent dont le quota n'est pas déjà consommé.
 
-```text
-0,00 %
-```
-
-Statut :
-
-```text
-✓ seuil respecté
-```
-
-### Temps de réponse p95
-
-Seuil défini :
-
-```text
-p95 < 1000 ms
-```
-
-Résultat :
-
-```text
-91,47 ms
-```
-
-Statut :
-
-```text
-✓ seuil respecté
-```
-
-Les deux seuils définis dans le scénario k6 sont donc respectés dans l'environnement local utilisé.
+Un test spécifique HTTP 429 reste à effectuer.
 
 ---
 
-# 6. Interprétation du test k6
+# 7. Comparaison avec l'ancien scénario
 
-Le résultat montre que, pendant ce scénario local :
+L'ancienne campagne comportait 2 569 requêtes et
+un p95 de 91,47 ms.
 
-```text
-aucune requête HTTP n'a échoué
-100 % des checks fonctionnels ont réussi
-95 % des requêtes ont répondu en moins de 91,47 ms
-le débit observé est d'environ 128 requêtes par seconde
-```
+Le scénario a depuis évolué avec les protections
+de téléchargement et la configuration BCrypt.
 
-Le test montre donc que le back-end reste stable dans ce scénario de charge local avec 10 utilisateurs virtuels simultanés.
+Les deux campagnes ne sont donc pas directement
+comparables pour mesurer une éventuelle régression.
 
-Il ne permet cependant pas de conclure que DataShare pourrait supporter ce même débit en production.
-
----
-
-# 7. Évolution du scénario de performance
-
-Une ancienne version du test de performance téléchargeait un fichier sans vérification de mot de passe.
-
-Après l'ajout de la protection des fichiers, le scénario a été mis à jour afin d'envoyer :
-
-```text
-X-Download-Password
-```
-
-La version actuelle effectue donc également côté serveur une vérification BCrypt du mot de passe avant chaque téléchargement.
-
-Les anciens résultats obtenus sans cette vérification et les nouveaux résultats ne correspondent donc pas exactement au même scénario.
-
-Ils ne doivent pas être comparés directement pour conclure à une régression de performance.
-
-Le résultat retenu comme référence finale est celui de la version actuelle :
-
-```text
-2 569 requêtes
-128,05 requêtes/s
-0 % d'erreur
-p95 = 91,47 ms
-```
+Le nouveau test constitue un pic court d'environ
+0,8 seconde, et non une charge soutenue de 20 secondes.
 
 ---
 
 # 8. Test de performance front-end avec Lighthouse
+
+Note du 1er octobre 2026 : les résultats Lighthouse ci-dessous correspondent à la campagne précédente. Une nouvelle mesure reste à effectuer après les modifications de l'interface Angular.
+
 
 ## 8.1 Objectif
 
@@ -366,9 +235,9 @@ Le LCP mesurait alors :
 
 ---
 
-# 10. Mesure finale Lighthouse
+# 10. Dernière mesure historique Lighthouse
 
-Après les modifications du front-end et la mise à jour finale de l'interface, une nouvelle analyse Lighthouse a été réalisée sur le build Angular de production.
+Lors de la précédente campagne de mesures, Lighthouse a été exécuté sur le build Angular de production. Il ne s'agit pas d'une mesure de la dernière version de l'interface.
 
 URL testée :
 
@@ -376,7 +245,7 @@ URL testée :
 http://localhost:4173
 ```
 
-Résultat final :
+Résultat de cette campagne :
 
 ```text
 Performance : 90/100
@@ -409,7 +278,7 @@ Résultat :
 90/100
 ```
 
-Le score Lighthouse final atteint 90 sur 100 dans l'environnement de test.
+Le score de cette campagne Lighthouse atteint 90 sur 100 dans l'environnement de test.
 
 ---
 
@@ -433,7 +302,7 @@ Résultat initial :
 4,2 s
 ```
 
-Résultat final :
+Résultat de la campagne précédente :
 
 ```text
 3,0 s
@@ -485,7 +354,7 @@ Le Speed Index mesure la vitesse à laquelle le contenu visible de la page appar
 
 # 12. Comparaison Lighthouse avant / après
 
-| Métrique | Avant | Final |
+| Métrique | Avant | Dernière mesure historique |
 |---|---:|---:|
 | Performance | 82/100 | 90/100 |
 | FCP | 2,6 s | 2,7 s |
@@ -598,222 +467,74 @@ Le scénario k6 de DataShare est donc un test de charge simple qui fournit égal
 Il utilise :
 
 ```text
-10 utilisateurs virtuels simultanés
-pendant 20 secondes
+10 utilisateurs virtuels
+20 téléchargements au total
+durée effective : environ 0,8 seconde
 ```
 
 Il ne constitue pas un test de stress ni un test permettant de déterminer la capacité maximale de l'application.
 
 ---
 
-# 15. Limites de l'analyse
+# 15. Limites de l'analyse actualisée
 
-Les résultats doivent être interprétés dans leur contexte.
+Le test k6 a été exécuté sur une machine locale avec :
+- une instance Spring Boot ;
+- PostgreSQL et le stockage local ;
+- 10 utilisateurs virtuels ;
+- seulement 20 téléchargements ;
+- un fichier protégé par mot de passe.
 
-Les tests ont été réalisés :
-
-```text
-sur une seule machine
-en environnement local
-avec une seule instance Spring Boot
-avec une base PostgreSQL locale
-avec un stockage de fichiers local
-avec un fichier de test de petite taille
-sur une période de 20 secondes pour k6
-avec 10 utilisateurs virtuels
-```
-
-Les résultats dépendent également :
-
-```text
-du processeur
-de la mémoire disponible
-du système d'exploitation
-de la charge de la machine
-du navigateur
-de la taille du fichier
-de PostgreSQL
-du stockage disque
-de la configuration Java
-```
-
-Le débit observé :
-
-```text
-128,05 requêtes/s
-```
-
-ne doit donc pas être présenté comme la capacité maximale de DataShare en production.
-
-Il s'agit uniquement du débit observé pendant ce scénario local précis.
+La durée effective d'environ 0,8 seconde ne permet
+pas de conclure sur la stabilité sous charge prolongée.
 
 ---
 
 # 16. Limites du scénario k6
 
-Le scénario actuel vérifie principalement un téléchargement répété.
+Ce test concerne uniquement les téléchargements protégés.
 
-Il ne reproduit pas l'ensemble du comportement d'un environnement réel.
+Il ne reproduit pas simultanément les inscriptions,
+connexions, téléversements et suppressions.
 
-Il ne teste notamment pas simultanément :
-
-```text
-l'inscription
-la connexion
-l'upload
-l'historique
-la suppression
-plusieurs tailles de fichiers
-plusieurs fichiers différents
-plusieurs instances du back-end
-un stockage réseau ou objet
-une base de données distante
-```
-
-Une analyse plus poussée pourrait utiliser plusieurs scénarios k6 représentant différents parcours utilisateurs.
+Le comportement HTTP 429 doit être vérifié séparément.
 
 ---
 
 # 17. Améliorations possibles
 
-Pour aller plus loin dans une analyse de production, il serait possible de tester :
-
-```text
-plusieurs niveaux de VUs
-des tests plus longs
-différentes tailles de fichiers
-plusieurs endpoints simultanément
-un environnement proche de la production
-la consommation CPU
-la consommation mémoire
-les performances PostgreSQL
-les performances du stockage
-```
-
-Exemple de montée en charge progressive :
-
-```text
-10 utilisateurs
-25 utilisateurs
-50 utilisateurs
-100 utilisateurs
-```
-
-Cela permettrait d'observer à quel moment les temps de réponse ou le taux d'erreur commencent à se dégrader.
+- Tester une charge soutenue compatible avec les limites.
+- Vérifier séparément les réponses HTTP 429.
+- Tester différentes tailles de fichiers.
+- Actualiser les résultats Lighthouse.
+- Comparer plusieurs campagnes dans des conditions identiques.
 
 ---
 
-# 18. Résumé des résultats finaux
+# 18. Résumé des résultats actualisés
 
-## Back-end - k6
+## Backend : k6, 1er octobre 2026
 
-```text
-Scénario :
-10 VUs pendant 20 secondes
+- 10 VUs.
+- 20 téléchargements réussis.
+- 40/40 vérifications réussies.
+- 0 % d'erreurs HTTP.
+- Temps moyen : 348,74 ms.
+- p95 : 475,39 ms.
+- Seuil p95 inférieur à 1000 ms : respecté.
 
-Endpoint :
-GET /api/download/{token}/file
+## Frontend : Lighthouse
 
-Protection :
-X-Download-Password
+Dernière mesure historique : 90/100.
 
-Requêtes :
-2 569
-
-Débit :
-128,05 requêtes/s
-
-Checks :
-5 138 / 5 138
-
-Checks réussis :
-100 %
-
-Erreurs HTTP :
-0 %
-
-Temps moyen :
-77,84 ms
-
-p95 :
-91,47 ms
-
-Temps maximum :
-207,4 ms
-
-Seuil erreurs < 1 % :
-RESPECTÉ
-
-Seuil p95 < 1000 ms :
-RESPECTÉ
-```
-
-## Front-end - Lighthouse
-
-```text
-Performance :
-90/100
-
-FCP :
-2,7 s
-
-LCP :
-3,0 s
-
-TBT :
-10 ms
-
-CLS :
-0
-
-Speed Index :
-2,7 s
-```
+Cette mesure doit être actualisée sur le dernier build Angular.
 
 ---
 
 # 19. Conclusion
 
-Les mesures finales montrent que les seuils définis pour le scénario k6 sont respectés dans l'environnement local de test.
+Les seuils k6 sont respectés pendant le nouveau scénario
+local de 20 téléchargements protégés.
 
-Pendant le test avec 10 utilisateurs virtuels :
-
-```text
-0 % d'erreur HTTP
-100 % des checks réussis
-p95 = 91,47 ms
-```
-
-Le test concerne la version actuelle du téléchargement avec protection par mot de passe et vérification BCrypt.
-
-Du côté du front-end, la mesure Lighthouse finale donne :
-
-```text
-90/100
-```
-
-avec notamment :
-
-```text
-LCP = 3,0 s
-CLS = 0
-TBT = 10 ms
-```
-
-Le LCP est passé de :
-
-```text
-4,2 s
-```
-
-à :
-
-```text
-3,0 s
-```
-
-entre la mesure initiale et la mesure finale.
-
-Ces résultats permettent de valider les objectifs définis pour l'environnement local de développement.
-
-Ils ne permettent cependant pas de déterminer la capacité maximale de DataShare ni de garantir les mêmes performances dans un environnement de production.
+Ce résultat ne permet pas d'estimer la capacité maximale
+du serveur ni sa stabilité sous charge prolongée.
