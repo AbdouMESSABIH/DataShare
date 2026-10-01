@@ -83,7 +83,7 @@ npx ng test --watch=false
 Dernière validation :
 
 ```text
-27 SUCCESS
+40 SUCCESS (1er octobre 2026)
 ```
 
 ## Tests End-to-End
@@ -134,13 +134,22 @@ La mesure finale Lighthouse du build de production est documentée dans :
 ../PERF.md
 ```
 
-Dernier résultat :
+Dernière campagne Lighthouse — 1er octobre 2026 :
 
-```text
-Performance : 90/100
-FCP         : 2,7 s
-LCP         : 3,0 s
-TBT         : 10 ms
-CLS         : 0
-Speed Index : 2,7 s
-```
+| Catégorie | Mobile | Desktop |
+|---|---:|---:|
+| Performance | 91/100 | 100/100 |
+| Accessibilité | 100/100 | 100/100 |
+| Bonnes pratiques | 100/100 | 100/100 |
+| SEO | 100/100 | 100/100 |
+
+| Métrique | Mobile | Desktop |
+|---|---:|---:|
+| FCP | 2,7 s | 0,5 s |
+| LCP | 2,9 s | 0,6 s |
+| TBT (valeur JSON) | 14 ms | 0 ms |
+| CLS | 0 | 0 |
+| Speed Index | 2,7 s | 0,5 s |
+
+Mesures locales ponctuelles sur le build de production.
+Les campagnes précédentes sont conservées dans `../PERF.md`.

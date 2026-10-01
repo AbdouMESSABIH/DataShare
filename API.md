@@ -296,7 +296,7 @@ Ce champ contient le mot de passe protégeant le téléchargement.
 
 Le paramètre est optionnel au niveau de l’API.
 
-Dans l’interface Angular actuelle, l’utilisateur doit saisir un mot de passe avant de téléverser son fichier.
+Dans l'interface Angular actuelle, le mot de passe est également optionnel. Un fichier peut être téléversé avec ou sans protection par mot de passe.
 
 Le mot de passe du fichier n’est jamais stocké en clair.
 
@@ -667,13 +667,11 @@ Aucun JWT n’est nécessaire.
 
 Cette route est publique.
 
-Le téléchargement repose sur :
+Le téléchargement repose sur un token valide.
 
-```text
-token de téléchargement
-+
-mot de passe du fichier
-```
+Si le fichier est protégé, un mot de passe correct
+est également nécessaire. Aucun mot de passe n'est
+requis pour un fichier partagé sans protection.
 
 ---
 
@@ -719,7 +717,9 @@ Pour un fichier protégé, le serveur retourne :
 403 Forbidden
 ```
 
-Les anciens fichiers ne possédant pas de mot de passe restent téléchargeables sans l’en-tête `X-Download-Password`.
+Tout fichier partagé sans mot de passe, qu'il provienne
+d'un ancien ou d'un nouvel upload, reste téléchargeable
+sans l'en-tête `X-Download-Password`.
 
 ---
 
@@ -762,6 +762,11 @@ Le token est invalide ou le fichier physique n’existe plus.
 ### 410 Gone
 
 Le lien est expiré.
+
+### 429 Too Many Requests
+
+Le quota de téléchargement par IP ou par token
+est dépassé. Voir la section 15.
 
 ---
 
@@ -915,7 +920,8 @@ Si le fichier n’est pas conforme, la requête peut être refusée avec :
 
 # 15. Limitation de débit
 
-Le back-end applique actuellement une limitation de débit sur deux endpoints sensibles.
+Le backend applique plusieurs limitations de débit afin
+de réduire les abus sur les endpoints sensibles.
 
 ## Connexion
 
@@ -945,34 +951,60 @@ Limite :
 20 requêtes par minute et par adresse IP
 ```
 
-Lorsque la limite est dépassée, le serveur retourne :
+## Téléchargement réel
+
+Endpoint :
+
+```text
+GET /api/download/{token}/file
+```
+
+Limites documentées :
+
+```text
+60 téléchargements par minute et par adresse IP
+30 téléchargements par minute et par token
+```
+
+Les limites de téléchargement sont complémentaires :
+le dépassement d'un quota entraîne un refus HTTP 429.
+
+Une vérification fonctionnelle réalisée le 1er octobre 2026
+a confirmé le comportement suivant avec un même token valide :
+
+| Tentatives | Résultat |
+|---|---|
+| 1 à 30 | HTTP 200 |
+| 31e tentative | HTTP 429 |
+
+La campagne de validation concerne le téléchargement réel
+du fichier, et non une mesure de charge de l'endpoint
+de consultation des métadonnées.
+
+## Réponse en cas de dépassement
+
+Code HTTP :
 
 ```text
 429 Too Many Requests
 ```
 
-avec l'en-tête :
+La limitation de connexion et de téléversement est
+documentée avec l'en-tête :
 
 ```text
 Retry-After: 60
 ```
 
-Le compteur est actuellement conservé en mémoire dans l'instance Spring Boot.
+Le mécanisme de limitation est conservé en mémoire dans
+l'instance Spring Boot actuelle.
 
-Il distingue l'endpoint concerné et l'adresse IP du client.
+Cette architecture convient au MVP mono-instance.
+Une architecture multi-instance nécessiterait un mécanisme
+de comptage partagé, par exemple avec Redis.
 
-Les endpoints de téléchargement :
-
-```text
-GET /api/download/{token}
-GET /api/download/{token}/file
-```
-
-ne sont pas soumis à ce mécanisme de rate limiting dans l'implémentation actuelle.
-
-Cette solution convient au MVP mono-instance.
-
-Une architecture utilisant plusieurs instances du back-end nécessiterait un compteur partagé, par exemple avec Redis.
+Les mesures et limites détaillées sont disponibles
+dans `PERF.md` et `SECURITY.md`.
 
 ---
 

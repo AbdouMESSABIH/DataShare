@@ -29,7 +29,7 @@ DataShare propose :
 - liens temporaires de 1 à 7 jours ;
 - historique paginé ;
 - suppression par le propriétaire ;
-- téléchargement public via token et mot de passe ;
+- téléchargement public via token, avec mot de passe si le fichier est protégé ;
 - validation du contenu réel des fichiers ;
 - purge automatique des fichiers expirés ;
 - rate limiting ;
@@ -37,7 +37,12 @@ DataShare propose :
 - tests automatisés ;
 - analyse de couverture ;
 - tests de charge ;
-- analyse de performance frontend.
+- analyse de performance frontend ;
+- page d'accueil publique accessible sans authentification ;
+- navigation responsive adaptée aux écrans mobiles ;
+- déconnexion utilisateur ;
+- affichage de l'état d'expiration des fichiers ;
+- filtrage de l'historique entre fichiers actifs et expirés.
 
 Contraintes principales :
 
@@ -349,7 +354,7 @@ Se connecter
         ↓
 Sélectionner un fichier
         ↓
-Choisir un mot de passe
+Choisir éventuellement un mot de passe
         ↓
 Choisir la durée d'expiration
         ↓
@@ -359,7 +364,7 @@ Récupérer le lien de partage
         ↓
 Ouvrir le lien
         ↓
-Saisir le mot de passe
+Saisir le mot de passe si le fichier est protégé
         ↓
 Télécharger
 ```
@@ -375,7 +380,7 @@ supprimer ses fichiers
 
 ## 12. Protection par mot de passe
 
-Lors de l'upload, le frontend envoie :
+Lorsqu'une protection est choisie, le frontend peut envoyer le champ :
 
 ```text
 password
@@ -473,7 +478,7 @@ source ~/.config/datashare/env
 Dernier résultat validé :
 
 ```text
-Tests run: 41
+Tests run: 49
 Failures: 0
 Errors: 0
 Skipped: 0
@@ -506,7 +511,7 @@ npx ng test --watch=false
 Dernier résultat :
 
 ```text
-27 SUCCESS
+40 SUCCESS (1er octobre 2026)
 ```
 
 ---
@@ -560,9 +565,9 @@ backend/target/site/jacoco/index.html
 Dernière mesure :
 
 ```text
-Instructions : 89,01 % (1515 / 1702)
-Branches     : 67,19 % (86 / 128)
-Lignes       : 90,56 % (547 / 604)
+Instructions : 89,78 % (1678 / 1869)
+Branches     : 70,48 % (117 / 166)
+Lignes       : 91,15 % (577 / 633)
 ```
 
 La couverture mesure le code exécuté pendant les tests mais ne garantit pas à elle seule l'absence de bugs.
@@ -608,29 +613,18 @@ frontend/dist/frontend/
 
 ## 21. Performance backend avec k6
 
-Script :
+Script : `performance/download-test.js`.
 
-```text
-performance/download-test.js
-```
+### Scénario actualisé du 1er octobre 2026
 
-Scénario final :
+- 10 utilisateurs virtuels ;
+- 20 itérations partagées ;
+- téléchargement d'un fichier protégé par mot de passe ;
+- utilisation d'un token de téléchargement valide.
 
-```text
-10 utilisateurs virtuels
-20 secondes
-fichier protégé par mot de passe
-```
+Variables utilisées : `DOWNLOAD_TOKEN`, `DOWNLOAD_PASSWORD` et `BASE_URL`.
 
-Variables utilisées :
-
-```text
-DOWNLOAD_TOKEN
-DOWNLOAD_PASSWORD
-BASE_URL
-```
-
-Commande :
+Commande de reproduction :
 
 ```bash
 DOWNLOAD_TOKEN='<token>' \
@@ -639,50 +633,87 @@ BASE_URL='http://localhost:8080' \
 k6 run performance/download-test.js
 ```
 
-Dernier résultat :
+### Résultats du scénario actualisé
 
-```text
-2 569 requêtes
-128,05 requêtes/s
-0 % d'erreur
-5 138 / 5 138 checks réussis
-p95 : 91,47 ms
-temps maximum : 207,4 ms
-```
+| Indicateur | Résultat |
+|---|---:|
+| Téléchargements HTTP 200 | 20/20 |
+| Vérifications k6 | 40/40 |
+| Échecs | 0 |
+| Temps de réponse p95 | 475,39 ms |
 
-Seuils :
+Seuils définis :
 
-```text
-http_req_failed < 1 %
-p95 < 1000 ms
-```
+- `http_req_failed < 1 %` ;
+- `p95 < 1000 ms`.
 
 Les deux seuils sont respectés dans l'environnement local.
 
-Les résultats ne représentent pas la capacité maximale d'une infrastructure de production.
+Le rate limiting a également été vérifié : 30 téléchargements
+autorisés, puis une réponse HTTP 429 à la 31e tentative, avec
+un même token valide dans la fenêtre de limitation.
 
-Documentation :
+### Ancienne campagne (historique)
 
-```text
-PERF.md
-```
+| Indicateur | Ancien résultat |
+|---|---:|
+| Requêtes | 2 569 |
+| Débit | 128,05 requêtes/s |
+| Taux d'erreur | 0 % |
+| Vérifications réussies | 5 138 / 5 138 |
+| p95 | 91,47 ms |
+| Temps maximum | 207,4 ms |
+
+Cette ancienne campagne précède les dernières modifications
+de sécurité, notamment le coût BCrypt et les limitations
+de téléchargement. Les scénarios ne sont donc pas
+directement comparables.
+
+Ces résultats locaux ne constituent pas une mesure de la
+capacité maximale d'une infrastructure de production.
+
+Documentation détaillée : `PERF.md`.
 
 ---
 
 ## 22. Lighthouse
 
-Mesure finale sur le build Angular :
+Nouvelle campagne du 1er octobre 2026 sur le build Angular
+de production, servi localement sur `http://localhost:4173/`.
 
-```text
-Performance : 90/100
-FCP         : 2,7 s
-LCP         : 3,0 s
-TBT         : 10 ms
-CLS         : 0
-Speed Index : 2,7 s
-```
+Outil : Lighthouse 13.4.0, mode Navigation.
 
-Lighthouse mesure principalement les performances de rendu côté navigateur, alors que k6 mesure le comportement du serveur sous charge.
+### Scores
+
+| Catégorie | Mobile | Desktop |
+|---|---:|---:|
+| Performance | 91/100 | 100/100 |
+| Accessibilité | 100/100 | 100/100 |
+| Bonnes pratiques | 100/100 | 100/100 |
+| SEO | 100/100 | 100/100 |
+
+### Métriques de performance
+
+| Métrique | Mobile | Desktop |
+|---|---:|---:|
+| FCP | 2,7 s | 0,5 s |
+| LCP | 2,9 s | 0,6 s |
+| TBT (valeur numérique JSON) | 14 ms | 0 ms |
+| CLS | 0 | 0 |
+| Speed Index | 2,7 s | 0,5 s |
+
+La correction de la balise `meta description` a permis de
+valider l'audit SEO sur les deux profils.
+
+Les précédentes mesures Lighthouse sont conservées dans
+`PERF.md` à titre historique.
+
+Lighthouse mesure notamment le rendu dans le navigateur,
+tandis que k6 mesure les réponses du serveur sous charge.
+
+Ces résultats correspondent à des mesures locales ponctuelles.
+
+Documentation détaillée : `PERF.md`.
 
 ---
 

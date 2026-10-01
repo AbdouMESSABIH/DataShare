@@ -237,27 +237,45 @@ Une tâche planifiée supprime ensuite les fichiers expirés et leurs métadonn�
 
 ## 11. Rate limiting
 
-Une limitation de débit en mémoire est utilisée par adresse IP.
+DataShare utilise un mécanisme de limitation de débit
+conservé en mémoire dans l'instance Spring Boot.
 
 Configuration documentée :
 
-```text
-Connexion
-10 requêtes / minute / IP
+| Opération | Limitation |
+|---|---:|
+| Connexion | 10 requêtes/minute/IP |
+| Téléversement | 20 requêtes/minute/IP |
+| Téléchargement réel | 60 requêtes/minute/IP |
+| Téléchargement réel | 30 requêtes/minute/token |
 
-Upload
-20 requêtes / minute / IP
+La limitation de téléchargement porte sur :
+
+```text
+GET /api/download/{token}/file
 ```
 
-Lorsque la limite est dépassée :
+Lorsqu'un quota est dépassé, le backend répond :
 
 ```text
 429 Too Many Requests
 ```
 
-Cette implémentation convient au MVP mono-instance.
+Le 1er octobre 2026, une vérification fonctionnelle
+avec le même token valide a donné :
 
-Une architecture multi-instance nécessiterait un compteur partagé, par exemple Redis.
+- 30 téléchargements autorisés (HTTP 200) ;
+- 31e téléchargement refusé (HTTP 429) ;
+- test exécuté dans une même fenêtre de limitation.
+
+Les limites de téléchargement réduisent notamment
+le risque d'abus répétés sur un lien de partage.
+
+Le stockage des compteurs en mémoire convient au MVP
+mono-instance. Une architecture multi-instance
+nécessiterait un compteur partagé, par exemple Redis.
+
+Voir également `API.md` et `PERF.md`.
 
 ---
 
@@ -362,7 +380,7 @@ fallback Content-Type
 Dernier résultat backend :
 
 ```text
-41 tests réussis
+49 tests réussis (1er octobre 2026)
 0 échec
 0 erreur
 ```

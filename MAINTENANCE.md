@@ -335,7 +335,7 @@ source ~/.config/datashare/env
 Dernière validation :
 
 ```text
-41 tests réussis
+49 tests réussis
 0 échec
 0 erreur
 BUILD SUCCESS
@@ -362,9 +362,9 @@ backend/target/site/jacoco/index.html
 Derniers résultats :
 
 ```text
-Instructions : 89,01 % (1515 / 1702)
-Branches     : 67,19 % (86 / 128)
-Lignes       : 90,56 % (547 / 604)
+Instructions : 89,78 % (1678 / 1869)
+Branches     : 70,48 % (117 / 166)
+Lignes       : 91,15 % (577 / 633)
 ```
 
 Une baisse importante après une modification doit être analysée.
@@ -417,7 +417,7 @@ npx ng test --watch=false
 Dernier résultat :
 
 ```text
-27 tests réussis
+40 tests réussis (1er octobre 2026)
 ```
 
 ---
@@ -566,21 +566,14 @@ SECURITY.md
 
 ## 21. Test de charge k6
 
-Script :
+Script : `performance/download-test.js`.
 
-```text
-performance/download-test.js
-```
+Le scénario actuel teste le téléchargement d'un fichier
+protégé par mot de passe :
 
-Le scénario actuel teste :
+`GET /api/download/{token}/file`
 
-```text
-GET /api/download/{token}/file
-```
-
-avec un fichier protégé par mot de passe.
-
-Commande :
+Commande de reproduction :
 
 ```bash
 cd ~/Projets/DataShare
@@ -593,66 +586,89 @@ k6 run performance/download-test.js
 
 Seuils :
 
-```text
-http_req_failed < 1 %
-p95 < 1000 ms
-```
+- `http_req_failed < 1 %` ;
+- `p95 < 1000 ms`.
 
-Dernier résultat :
+### Dernier résultat — 1er octobre 2026
 
-```text
-10 VUs
-20 secondes
+| Indicateur | Résultat |
+|---|---:|
+| Utilisateurs virtuels | 10 |
+| Itérations partagées | 20 |
+| Téléchargements HTTP 200 | 20/20 |
+| Vérifications | 40/40 |
+| Échecs | 0 |
+| p95 | 475,39 ms |
 
-2 569 requêtes
-128,05 requêtes/s
-0 % d'erreur
-5 138 / 5 138 checks réussis
-p95 : 91,47 ms
-maximum : 207,4 ms
-```
+Les seuils définis ont été respectés.
 
-Ces résultats correspondent uniquement à l'environnement local.
+Contrôle complémentaire du rate limiting :
+30 téléchargements autorisés, puis HTTP 429
+à la 31e tentative dans la fenêtre de limitation.
 
-Documentation :
+L'ancien scénario, avec 2 569 requêtes et un
+p95 de 91,47 ms, reste documenté dans `PERF.md`.
 
-```text
-PERF.md
-```
+Ces mesures correspondent à l'environnement local
+et ne représentent pas une capacité maximale
+en production.
+
+Documentation détaillée : `PERF.md`.
 
 ---
 
 ## 22. Lighthouse
 
-Le build Angular peut être servi localement avec :
+Générer d'abord le build Angular de production :
 
 ```bash
 cd ~/Projets/DataShare/frontend
+npm run build
+```
 
+Le build peut ensuite être servi localement avec :
+
+```bash
 python3 -m http.server 4173 \
   --directory dist/frontend/browser \
   --bind 127.0.0.1
 ```
 
-Puis :
+Ouvrir `http://localhost:4173/` dans Chrome,
+puis effectuer les audits Mobile et Desktop
+depuis DevTools > Lighthouse.
+
+Une mesure en ligne de commande est également possible :
 
 ```bash
-npx lighthouse http://localhost:4173 \
-  --only-categories=performance \
+npx lighthouse http://localhost:4173/ \
   --output=json \
   --output-path=./lighthouse-final.json
 ```
 
-Dernier résultat :
+### Dernière campagne — 1er octobre 2026
 
-```text
-Performance : 90/100
-FCP : 2,7 s
-LCP : 3,0 s
-TBT : 10 ms
-CLS : 0
-Speed Index : 2,7 s
-```
+Lighthouse 13.4.0, build Angular de production.
+
+| Catégorie | Mobile | Desktop |
+|---|---:|---:|
+| Performance | 91/100 | 100/100 |
+| Accessibilité | 100/100 | 100/100 |
+| Bonnes pratiques | 100/100 | 100/100 |
+| SEO | 100/100 | 100/100 |
+
+| Métrique | Mobile | Desktop |
+|---|---:|---:|
+| FCP | 2,7 s | 0,5 s |
+| LCP | 2,9 s | 0,6 s |
+| TBT (valeur JSON) | 14 ms | 0 ms |
+| CLS | 0 | 0 |
+| Speed Index | 2,7 s | 0,5 s |
+
+Les mesures précédentes restent disponibles
+dans `PERF.md` à titre historique.
+
+Ces résultats sont issus d'un test local ponctuel.
 
 ---
 

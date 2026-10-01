@@ -11,14 +11,14 @@ Les résultats Maven Surefire concernent les tests unitaires et les tests d'int�
 Dernière validation :
 
 ```text
-Tests run: 41
+Tests run: 49
 Failures: 0
 Errors: 0
 Skipped: 0
 BUILD SUCCESS
 ```
 
-La commande utilisée est :
+Commande depuis la racine du dépôt :
 
 ```bash
 cd backend
@@ -28,7 +28,7 @@ source ~/.config/datashare/env
 
 ## Couverture JaCoCo
 
-La couverture est générée avec :
+Commande depuis la racine du dépôt :
 
 ```bash
 cd backend
@@ -39,9 +39,9 @@ source ~/.config/datashare/env
 Résultats finaux :
 
 ```text
-Instructions : 89,01 % (1515 / 1702)
-Branches     : 67,19 % (86 / 128)
-Lignes       : 90,56 % (547 / 604)
+Instructions : 89,78 % (1678 / 1869)
+Branches     : 70,48 % (117 / 166)
+Lignes       : 91,15 % (577 / 633)
 ```
 
 Le rapport HTML complet est généré localement dans :
@@ -68,7 +68,7 @@ No errors/warnings found
 BUILD SUCCESS
 ```
 
-Commande :
+Commande depuis la racine du dépôt :
 
 ```bash
 cd backend
@@ -88,8 +88,8 @@ SECURITY.md
 État global documenté :
 
 ```text
-Backend JUnit    : 41 / 41
-Frontend Angular : 27 / 27
+Backend JUnit    : 49 / 49
+Frontend Angular : 40 / 40
 Playwright       : 3 / 3
 ESLint           : succès
 SpotBugs         : 0 bug / 0 erreur

@@ -62,7 +62,7 @@ source ~/.config/datashare/env
 Dernière validation :
 
 ```text
-Tests run: 41
+Tests run: 49
 Failures: 0
 Errors: 0
 Skipped: 0
@@ -164,7 +164,7 @@ npx ng test --watch=false
 Dernier résultat :
 
 ```text
-27 SUCCESS
+40 SUCCESS (1er octobre 2026)
 ```
 
 Les tests couvrent notamment :
@@ -172,13 +172,40 @@ Les tests couvrent notamment :
 ```text
 AppComponent
 AuthInterceptor
+HomeComponent
 LoginComponent
 RegisterComponent
+UploadComponent
 DownloadComponent
 HistoryComponent
 AuthService
 FileService
 ```
+
+### Fonctionnalités récentes couvertes
+
+Les tests unitaires vérifient notamment :
+
+- l'affichage de la page d'accueil publique et son lien vers l'upload ;
+- la déconnexion et la redirection vers la connexion ;
+- le filtrage de l'historique : tous, actifs et expirés ;
+- l'upload avec ou sans mot de passe ;
+- la réinitialisation du formulaire d'upload ;
+- la gestion d'un token JWT expiré (HTTP 401) ;
+- la gestion des liens de téléchargement expirés (HTTP 410).
+
+### Vérifications manuelles complémentaires
+
+La présentation responsive doit également être contrôlée
+dans le navigateur, notamment :
+
+- affichage de la navigation sur mobile ;
+- adaptation des pages aux différentes largeurs d'écran ;
+- lisibilité du pied de page ;
+- affichage de l'état d'expiration des fichiers.
+
+Ces vérifications manuelles ne sont pas comptabilisées
+dans les 40 tests Angular automatisés.
 
 Le composant de téléchargement teste notamment :
 
@@ -265,16 +292,16 @@ Dernière mesure :
 
 ```text
 Instructions
-89,01 %
-1515 / 1702
+89,78 %
+1678 / 1869
 
 Branches
-67,19 %
-86 / 128
+70,48 %
+117 / 166
 
 Lignes
-90,56 %
-547 / 604
+91,15 %
+577 / 633
 ```
 
 ---
@@ -337,46 +364,71 @@ frontend/dist/frontend/
 
 ## 10. Tests de performance
 
-k6 est utilisé pour le back-end.
+k6 est utilisé pour tester les téléchargements du back-end.
 
-Scénario final :
+### Campagne actualisée du 1er octobre 2026
 
-```text
-10 VUs
-20 secondes
-GET /api/download/{token}/file
-X-Download-Password
-```
+Scénario :
 
-Résultat :
+- 10 utilisateurs virtuels (VUs) ;
+- 20 itérations partagées ;
+- téléchargement d'un fichier protégé par mot de passe ;
+- endpoint `GET /api/download/{token}/file` ;
+- mot de passe transmis avec `X-Download-Password`.
 
-```text
-2 569 requêtes
-128,05 requêtes/s
-0 % d'erreur
-p95 = 91,47 ms
-```
+Résultats obtenus :
 
-Documentation :
+| Indicateur | Résultat |
+|---|---:|
+| Téléchargements HTTP 200 | 20/20 |
+| Vérifications k6 | 40/40 |
+| Échecs | 0 |
+| p95 | 475,39 ms |
 
-```text
-PERF.md
-```
+Les seuils `http_req_failed < 1 %` et `p95 < 1000 ms`
+ont été respectés.
+
+Le rate limiting a également été vérifié : 30 téléchargements
+autorisés, puis une réponse HTTP 429 à la 31e tentative
+avec le même token valide dans la fenêtre de limitation.
+
+La campagne précédente (2 569 requêtes, p95 de 91,47 ms)
+est conservée comme mesure historique dans `PERF.md`.
+Les scénarios ne sont pas directement comparables.
+
+Documentation détaillée : `PERF.md`.
 
 ---
 
 ## 11. Lighthouse
 
-Mesure finale :
+Nouvelle campagne du 1er octobre 2026, réalisée sur
+le build Angular de production avec Lighthouse 13.4.0.
 
-```text
-Performance : 90/100
-FCP : 2,7 s
-LCP : 3,0 s
-TBT : 10 ms
-CLS : 0
-Speed Index : 2,7 s
-```
+### Scores
+
+| Catégorie | Mobile | Desktop |
+|---|---:|---:|
+| Performance | 91/100 | 100/100 |
+| Accessibilité | 100/100 | 100/100 |
+| Bonnes pratiques | 100/100 | 100/100 |
+| SEO | 100/100 | 100/100 |
+
+### Métriques
+
+| Métrique | Mobile | Desktop |
+|---|---:|---:|
+| FCP | 2,7 s | 0,5 s |
+| LCP | 2,9 s | 0,6 s |
+| TBT (valeur JSON) | 14 ms | 0 ms |
+| CLS | 0 | 0 |
+| Speed Index | 2,7 s | 0,5 s |
+
+La balise meta description est validée sur les deux profils.
+
+Ces résultats correspondent à des mesures locales ponctuelles.
+
+Documentation détaillée : `PERF.md`.
 
 ---
 
@@ -386,10 +438,10 @@ Speed Index : 2,7 s
 
 ```text
 Backend JUnit
-41 / 41 réussis
+49 / 49 réussis
 
 Frontend Angular
-27 / 27 réussis
+40 / 40 réussis (1er octobre 2026)
 
 Playwright
 3 / 3 réussis
@@ -402,7 +454,7 @@ SpotBugs
 0 erreur
 
 JaCoCo lignes
-90,56 %
+91,15 %
 ```
 
 Cette combinaison permet de vérifier :

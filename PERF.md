@@ -286,7 +286,14 @@ Speed Index :
 
 ---
 
-# 11. Interprétation des métriques Lighthouse
+# 11. Interprétation des métriques Lighthouse — campagne historique
+
+Les valeurs de cette section correspondent à l'ancienne
+campagne Lighthouse (Performance : 90/100).
+
+Les derniers résultats, datés du 1er octobre 2026,
+figurent dans la section 12.1 : 91/100 sur Mobile
+et 100/100 sur Desktop.
 
 ## Performance
 

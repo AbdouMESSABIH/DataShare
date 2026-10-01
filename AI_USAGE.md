@@ -171,10 +171,10 @@ Cette évolution ne change pas le principe de la revue humaine appliquée au cod
 
 ## 11. Tests actuels
 
-La validation finale du backend comprend :
+La dernière validation du backend (1er octobre 2026) comprend :
 
 ```text
-41 tests
+49 tests
 0 échec
 0 erreur
 ```
@@ -182,7 +182,7 @@ La validation finale du backend comprend :
 Le frontend comprend :
 
 ```text
-27 tests Angular
+40 tests Angular (1er octobre 2026)
 ```
 
 Les tests End-to-End comprennent :
@@ -207,9 +207,9 @@ SpotBugs : 0 bug / 0 erreur
 Couverture backend finale :
 
 ```text
-Instructions : 89,01 %
-Branches : 67,19 %
-Lignes : 90,56 %
+Instructions : 89,78 % (1678 / 1869)
+Branches : 70,48 % (117 / 166)
+Lignes : 91,15 % (577 / 633)
 ```
 
 ---
