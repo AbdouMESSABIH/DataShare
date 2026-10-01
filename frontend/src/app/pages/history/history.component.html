@@ -139,6 +139,33 @@
       </div>
 
 
+      <div
+        class="filter-bar"
+        role="group"
+        aria-label="Filtrer les fichiers de cette page"
+      >
+        <button
+          type="button"
+          [class.selected]="statusFilter === 'all'"
+          [attr.aria-pressed]="statusFilter === 'all'"
+          (click)="statusFilter = 'all'"
+        >Tous</button>
+
+        <button
+          type="button"
+          [class.selected]="statusFilter === 'active'"
+          [attr.aria-pressed]="statusFilter === 'active'"
+          (click)="statusFilter = 'active'"
+        >Actifs</button>
+
+        <button
+          type="button"
+          [class.selected]="statusFilter === 'expired'"
+          [attr.aria-pressed]="statusFilter === 'expired'"
+          (click)="statusFilter = 'expired'"
+        >Expirés</button>
+      </div>
+
       <p
         class="copy-message"
         *ngIf="copyMessage"
@@ -150,9 +177,13 @@
 
       <div class="files-list">
 
+        <p *ngIf="filteredFiles.length === 0">
+          Aucun fichier dans cette catégorie sur cette page.
+        </p>
+
         <article
           class="file-item"
-          *ngFor="let file of files"
+          *ngFor="let file of filteredFiles"
         >
 
           <div class="file-main">

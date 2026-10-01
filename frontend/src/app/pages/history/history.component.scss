@@ -626,3 +626,23 @@
     width: 100%;
   }
 }
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.filter-bar button {
+  padding: 8px 13px;
+  border: 1px solid var(--ds-border);
+  border-radius: 8px;
+  background: var(--ds-white);
+  color: var(--ds-text);
+  cursor: pointer;
+}
+
+.filter-bar button.selected {
+  background: var(--ds-dark);
+  color: var(--ds-white);
+}

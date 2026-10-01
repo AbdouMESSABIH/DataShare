@@ -40,6 +40,19 @@ export class HistoryComponent
     FileHistoryResponse[] = [];
 
 
+  statusFilter: 'all' | 'active' | 'expired' = 'all';
+
+  get filteredFiles(): FileHistoryResponse[] {
+    if (this.statusFilter === 'all') {
+      return this.files;
+    }
+
+    return this.files.filter(
+      file => this.isExpired(file.expiresAt)
+        === (this.statusFilter === 'expired')
+    );
+  }
+
   page = 0;
 
   size = 10;
