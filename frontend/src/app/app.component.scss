@@ -201,3 +201,32 @@
 :host:has(app-home) .nav-register {
   display: inline-flex;
 }
+
+
+/* Pied de page */
+
+.app-footer {
+  min-height: 58px;
+  padding: 12px 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+
+  color: var(--ds-dark);
+  font-size: 12px;
+  text-align: center;
+}
+
+.app-footer p {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .app-footer {
+    flex-direction: column;
+    justify-content: center;
+  }
+}
