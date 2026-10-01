@@ -221,6 +221,26 @@ class FileServicePaginationTest {
 
 
     @Test
+    void historyShouldRejectZeroPageSize() {
+
+        ResponseStatusException exception =
+                assertThrows(
+                        ResponseStatusException.class,
+                        () -> fileService.getHistory(
+                                "test@test.com",
+                                0,
+                                0
+                        )
+                );
+
+        assertEquals(
+                HttpStatus.BAD_REQUEST,
+                exception.getStatusCode()
+        );
+    }
+
+
+    @Test
     void historyShouldRejectPageSizeGreaterThanFifty() {
 
         ResponseStatusException exception =
