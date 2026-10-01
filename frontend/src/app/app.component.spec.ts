@@ -49,4 +49,23 @@ describe('AppComponent', () => {
     expect(navigateSpy).toHaveBeenCalledWith(['/login']);
   });
 
+
+  it('should toggle and close the mobile menu', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const app = fixture.componentInstance;
+
+    expect(app.mobileMenuOpen).toBeFalse();
+
+    app.toggleMobileMenu();
+    expect(app.mobileMenuOpen).toBeTrue();
+
+    app.toggleMobileMenu();
+    expect(app.mobileMenuOpen).toBeFalse();
+
+    app.toggleMobileMenu();
+    app.closeMobileMenu();
+
+    expect(app.mobileMenuOpen).toBeFalse();
+  });
+
 });

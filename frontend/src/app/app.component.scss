@@ -140,3 +140,58 @@
     min-height: calc(100vh - 72px);
   }
 }
+
+/* Navigation mobile */
+
+.mobile-menu-toggle {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .mobile-menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 42px;
+    height: 42px;
+
+    border: 0;
+    border-radius: 8px;
+
+    background: var(--ds-dark);
+    color: var(--ds-white);
+
+    font-size: 25px;
+    cursor: pointer;
+  }
+
+  .navigation {
+    display: none;
+    position: absolute;
+
+    top: 72px;
+    left: 16px;
+    right: 16px;
+
+    padding: 12px;
+
+    flex-direction: column;
+    align-items: stretch;
+
+    background: var(--ds-white);
+    border-radius: 10px;
+
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+  }
+
+  .navigation.mobile-open {
+    display: flex;
+  }
+
+  .navigation a,
+  .navigation button {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}

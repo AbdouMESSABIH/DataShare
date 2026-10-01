@@ -10,14 +10,28 @@
     </a>
 
 
+    <button
+      class="mobile-menu-toggle"
+      type="button"
+      aria-label="Afficher ou masquer la navigation"
+      aria-controls="mobile-navigation"
+      [attr.aria-expanded]="mobileMenuOpen"
+      (click)="toggleMobileMenu()"
+    >
+      <span aria-hidden="true">☰</span>
+    </button>
+
     <nav
+      id="mobile-navigation"
       class="navigation"
+      [class.mobile-open]="mobileMenuOpen"
       aria-label="Navigation principale"
     >
 
       <a
         class="nav-login"
         routerLink="/login"
+        (click)="closeMobileMenu()"
       >
         Se connecter
       </a>
@@ -26,6 +40,7 @@
       <a
         class="nav-register"
         routerLink="/register"
+        (click)="closeMobileMenu()"
       >
         Créer un compte
       </a>
@@ -34,6 +49,7 @@
       <a
         class="nav-upload"
         routerLink="/upload"
+        (click)="closeMobileMenu()"
       >
         Téléverser
       </a>
@@ -42,6 +58,7 @@
       <a
         class="nav-history"
         routerLink="/history"
+        (click)="closeMobileMenu()"
       >
         Mon espace
       </a>

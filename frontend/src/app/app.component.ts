@@ -21,12 +21,23 @@ import {
 })
 export class AppComponent {
 
+  mobileMenuOpen = false;
+
   constructor(
     private authService: AuthService,
     private router: Router
   ) {}
 
+  toggleMobileMenu(): void {
+    this.mobileMenuOpen = !this.mobileMenuOpen;
+  }
+
+  closeMobileMenu(): void {
+    this.mobileMenuOpen = false;
+  }
+
   logout(): void {
+    this.closeMobileMenu();
     this.authService.logout();
     void this.router.navigate(['/login']);
   }
