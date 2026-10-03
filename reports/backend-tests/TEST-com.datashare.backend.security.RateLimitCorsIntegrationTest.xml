@@ -1,0 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite name="com.datashare.backend.security.RateLimitCorsIntegrationTest" tests="1" failures="0" errors="0" skipped="0" time="0.087">
+  <testcase name="rateLimitShouldReturnCorsHeadersOn429" classname="com.datashare.backend.security.RateLimitCorsIntegrationTest" time="0.077" />
+</testsuite>

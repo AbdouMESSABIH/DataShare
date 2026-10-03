@@ -1,4 +1,2 @@
--------------------------------------------------------------------------------
 Test set: com.datashare.backend.service.FileServicePaginationTest
--------------------------------------------------------------------------------
-Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.009 s -- in com.datashare.backend.service.FileServicePaginationTest
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
