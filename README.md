@@ -55,6 +55,9 @@ PDF
 PNG
 JPG
 JPEG
+MP3
+MP4
+ZIP
 
 Expiration :
 1 à 7 jours
@@ -266,7 +269,7 @@ JWT_SECRET
 Exemple :
 
 ```bash
-export DB_PASSWORD='votre_mot_de_passe_postgresql'
+export DB_PASSWORD='votre_mot_de_passe'
 export JWT_SECRET='votre_secret_jwt'
 ```
 
@@ -281,6 +284,12 @@ puis chargées avec :
 ```bash
 source ~/.config/datashare/env
 ```
+
+La valeur de `DB_PASSWORD` doit être identique au mot de passe
+attribué à l'utilisateur PostgreSQL `datashare`.
+
+Pour `JWT_SECRET`, utiliser un secret aléatoire robuste,
+par exemple généré avec `openssl rand -hex 32`.
 
 Les secrets réels ne doivent jamais être versionnés dans Git.
 
@@ -307,6 +316,15 @@ spring.jpa.hibernate.ddl-auto=validate
 ```
 
 Flyway applique les migrations nécessaires au démarrage.
+
+La migration V3 ajoute notamment deux index PostgreSQL :
+
+- `files.owner_id` : utilisé pour rechercher les fichiers
+  appartenant à un utilisateur ;
+- `files.expires_at` : utilisé pour rechercher les fichiers
+  expirés lors du nettoyage automatique.
+
+Ces index accompagnent les requêtes d'historique et de purge.
 
 ---
 
@@ -378,424 +396,215 @@ supprimer ses fichiers
 
 ---
 
+<!-- Synthèse README : 3 octobre 2026 -->
+
 ## 12. Protection par mot de passe
 
-Lorsqu'une protection est choisie, le frontend peut envoyer le champ :
+Le mot de passe de partage est facultatif. Lorsqu'il est
+renseigné, il doit contenir au minimum six caractères.
 
-```text
-password
-```
+Le backend conserve uniquement son hash BCrypt.
+Lors d'un téléchargement protégé, le mot de passe
+est transmis dans l'en-tête `X-Download-Password`.
 
-Le backend ne stocke pas ce mot de passe en clair.
+Un fichier non protégé ne nécessite aucun mot de passe.
 
-Il utilise BCrypt :
-
-```text
-mot de passe
-    ↓
-BCrypt
-    ↓
-hash
-    ↓
-PostgreSQL
-```
-
-Lors du téléchargement, le mot de passe est transmis dans :
-
-```text
-X-Download-Password
-```
-
-Un mot de passe incorrect ou absent pour un fichier protégé retourne :
-
-```text
-403 Forbidden
-```
+Détails : [API.md](API.md) et [SECURITY.md](SECURITY.md).
 
 ---
 
 ## 13. API REST
 
-La documentation complète de l'API se trouve dans :
+Principaux endpoints :
 
-```text
-API.md
-```
+| Méthode | Endpoint | Fonction |
+|---|---|---|
+| POST | `/api/auth/register` | Inscription |
+| POST | `/api/auth/login` | Connexion |
+| POST | `/api/files/upload` | Téléversement authentifié |
+| GET | `/api/files` | Historique paginé |
+| DELETE | `/api/files/{id}` | Suppression |
+| GET | `/api/download/{token}` | Informations publiques |
+| GET | `/api/download/{token}/file` | Téléchargement |
 
-Endpoints principaux :
-
-```text
-POST   /api/auth/register
-POST   /api/auth/login
-
-POST   /api/files/upload
-GET    /api/files
-DELETE /api/files/{id}
-
-GET    /api/download/{token}
-GET    /api/download/{token}/file
-```
+Le contrat complet, les champs, les exemples JSON
+et les codes HTTP sont documentés dans [API.md](API.md).
 
 ---
 
 ## 14. Sécurité
 
-Le projet utilise notamment :
+DataShare applique notamment :
 
-- Spring Security ;
-- JWT ;
-- BCrypt pour les mots de passe utilisateurs ;
-- BCrypt pour les mots de passe fichiers ;
-- contrôle du propriétaire ;
-- expiration des liens ;
-- validation des fichiers ;
-- limite de taille de 1 Go ;
-- whitelist de formats ;
-- vérification du contenu réel ;
-- rate limiting ;
-- variables d'environnement ;
-- contrôle ESLint ;
-- contrôle SpotBugs.
+- JWT pour les routes privées ;
+- contrôle du propriétaire lors de la suppression ;
+- BCrypt pour les mots de passe ;
+- expiration des liens entre 1 et 7 jours ;
+- vérification des extensions et signatures des fichiers ;
+- limitation de débit par adresse IP et par jeton ;
+- secrets conservés hors du dépôt Git.
 
-La documentation détaillée est disponible dans :
+Formats autorisés : TXT, PDF, PNG, JPG, JPEG, MP3, MP4 et ZIP.
 
-```text
-SECURITY.md
-```
+Le dernier scan OWASP backend documenté n'a détecté
+aucune vulnérabilité connue dans les dépendances analysées.
+
+L'audit npm des dépendances de production a relevé
+sept alertes, documentées avec la décision de traitement.
+
+Voir [SECURITY.md](SECURITY.md) et [reports/README.md](reports/README.md).
 
 ---
 
 ## 15. Tests backend
 
-Commande :
+Dernière validation du 3 octobre 2026 :
+
+- 58 tests réussis ;
+- aucune erreur ni aucun échec ;
+- Maven `BUILD SUCCESS`.
+
+Commande de validation complète :
 
 ```bash
-cd ~/Projets/DataShare/backend
+cd "$(git rev-parse --show-toplevel)/backend"
 source ~/.config/datashare/env
-./mvnw clean test
+./mvnw clean verify
 ```
 
-Dernier résultat validé :
-
-```text
-Tests run: 49
-Failures: 0
-Errors: 0
-Skipped: 0
-BUILD SUCCESS
-```
+Détails et critères d'acceptation : [TESTING.md](TESTING.md).
 
 ---
 
 ## 16. Tests frontend
 
-Lint :
+Dernière validation : **44 tests Angular réussis**.
 
-```bash
-cd ~/Projets/DataShare/frontend
-npx ng lint
-```
-
-Résultat :
-
-```text
-All files pass linting.
-```
-
-Tests Angular :
+Commande depuis `frontend/` :
 
 ```bash
 npx ng test --watch=false
 ```
 
-Dernier résultat :
-
-```text
-40 SUCCESS (1er octobre 2026)
-```
+Le plan de tests et les résultats sont détaillés
+dans [TESTING.md](TESTING.md).
 
 ---
 
 ## 17. Tests End-to-End
 
-Playwright :
+La dernière campagne Playwright documentée
+comprend trois scénarios réussis.
 
-```bash
-cd ~/Projets/DataShare/frontend
-npx playwright test
-```
-
-Dernier résultat :
-
-```text
-3 passed
-```
-
-Le scénario principal couvre :
-
-```text
-Inscription
-→ Connexion
-→ Upload protégé par mot de passe
-→ Historique
-→ Mauvais mot de passe
-→ Bon mot de passe
-→ Téléchargement
-→ Suppression
-```
+Consulter [TESTING.md](TESTING.md) pour leur description
+et leur contexte d'exécution.
 
 ---
 
 ## 18. Couverture JaCoCo
 
-Génération :
+Dernière mesure du 3 octobre 2026 :
 
-```bash
-cd ~/Projets/DataShare/backend
-source ~/.config/datashare/env
-./mvnw clean test jacoco:report
-```
+| Indicateur | Couverture |
+|---|---:|
+| Instructions | 91,64 % |
+| Branches | **72,31 % (175/242)** |
+| Lignes | 91,89 % |
 
-Rapport :
+Le seuil minimal de 70 % des branches est contrôlé
+automatiquement pendant la phase Maven `verify`.
 
-```text
-backend/target/site/jacoco/index.html
-```
-
-Dernière mesure :
-
-```text
-Instructions : 89,78 % (1678 / 1869)
-Branches     : 70,48 % (117 / 166)
-Lignes       : 91,15 % (577 / 633)
-```
-
-La couverture mesure le code exécuté pendant les tests mais ne garantit pas à elle seule l'absence de bugs.
+Rapport et capture : [reports/README.md](reports/README.md).
 
 ---
 
 ## 19. SpotBugs
 
-Commande :
+Dernière validation backend :
 
-```bash
-cd ~/Projets/DataShare/backend
-./mvnw spotbugs:check
-```
+- 0 bug ;
+- 0 erreur.
 
-Dernier résultat :
+Le contrôle fait partie de la validation Maven.
 
-```text
-BugInstance size is 0
-Error size is 0
-No errors/warnings found
-BUILD SUCCESS
-```
+Voir [TESTING.md](TESTING.md).
 
 ---
 
 ## 20. Build Angular
 
-Commande :
+Dernière compilation de production du 3 octobre 2026 :
 
-```bash
-cd ~/Projets/DataShare/frontend
-npm run build
-```
+| Mesure | Résultat |
+|---|---:|
+| Bundle initial brut | 380,46 kB |
+| Transfert estimé | 96,89 kB |
+| Erreur de compilation | 0 |
 
-Le build de production est généré dans :
-
-```text
-frontend/dist/frontend/
-```
+Le budget de performance et l'évolution du bundle
+sont détaillés dans [PERF.md](PERF.md).
 
 ---
 
 ## 21. Performance backend avec k6
 
-Script : `performance/download-test.js`.
+Les campagnes k6 mesurent notamment la latence,
+le débit et le taux d'erreur du backend sous charge.
 
-### Scénario actualisé du 1er octobre 2026
-
-- 10 utilisateurs virtuels ;
-- 20 itérations partagées ;
-- téléchargement d'un fichier protégé par mot de passe ;
-- utilisation d'un token de téléchargement valide.
-
-Variables utilisées : `DOWNLOAD_TOKEN`, `DOWNLOAD_PASSWORD` et `BASE_URL`.
-
-Commande de reproduction :
-
-```bash
-DOWNLOAD_TOKEN='<token>' \
-DOWNLOAD_PASSWORD='<mot-de-passe>' \
-BASE_URL='http://localhost:8080' \
-k6 run performance/download-test.js
-```
-
-### Résultats du scénario actualisé
-
-| Indicateur | Résultat |
-|---|---:|
-| Téléchargements HTTP 200 | 20/20 |
-| Vérifications k6 | 40/40 |
-| Échecs | 0 |
-| Temps de réponse p95 | 475,39 ms |
-
-Seuils définis :
-
-- `http_req_failed < 1 %` ;
-- `p95 < 1000 ms`.
-
-Les deux seuils sont respectés dans l'environnement local.
-
-Le rate limiting a également été vérifié : 30 téléchargements
-autorisés, puis une réponse HTTP 429 à la 31e tentative, avec
-un même token valide dans la fenêtre de limitation.
-
-### Ancienne campagne (historique)
-
-| Indicateur | Ancien résultat |
-|---|---:|
-| Requêtes | 2 569 |
-| Débit | 128,05 requêtes/s |
-| Taux d'erreur | 0 % |
-| Vérifications réussies | 5 138 / 5 138 |
-| p95 | 91,47 ms |
-| Temps maximum | 207,4 ms |
-
-Cette ancienne campagne précède les dernières modifications
-de sécurité, notamment le coût BCrypt et les limitations
-de téléchargement. Les scénarios ne sont donc pas
-directement comparables.
-
-Ces résultats locaux ne constituent pas une mesure de la
-capacité maximale d'une infrastructure de production.
-
-Documentation détaillée : `PERF.md`.
+Le coût de BCrypt sur les téléchargements protégés,
+les différences entre scénarios et leurs limites
+d'interprétation sont analysés dans [PERF.md](PERF.md).
 
 ---
 
 ## 22. Lighthouse
 
-Nouvelle campagne du 1er octobre 2026 sur le build Angular
-de production, servi localement sur `http://localhost:4173/`.
+Les mesures Lighthouse portent sur les performances
+du navigateur, l'accessibilité, les bonnes pratiques
+et le référencement.
 
-Outil : Lighthouse 13.4.0, mode Navigation.
+Les résultats historiques mobile et desktop sont
+conservés dans [PERF.md](PERF.md).
 
-### Scores
-
-| Catégorie | Mobile | Desktop |
-|---|---:|---:|
-| Performance | 91/100 | 100/100 |
-| Accessibilité | 100/100 | 100/100 |
-| Bonnes pratiques | 100/100 | 100/100 |
-| SEO | 100/100 | 100/100 |
-
-### Métriques de performance
-
-| Métrique | Mobile | Desktop |
-|---|---:|---:|
-| FCP | 2,7 s | 0,5 s |
-| LCP | 2,9 s | 0,6 s |
-| TBT (valeur numérique JSON) | 14 ms | 0 ms |
-| CLS | 0 | 0 |
-| Speed Index | 2,7 s | 0,5 s |
-
-La correction de la balise `meta description` a permis de
-valider l'audit SEO sur les deux profils.
-
-Les précédentes mesures Lighthouse sont conservées dans
-`PERF.md` à titre historique.
-
-Lighthouse mesure notamment le rendu dans le navigateur,
-tandis que k6 mesure les réponses du serveur sous charge.
-
-Ces résultats correspondent à des mesures locales ponctuelles.
-
-Documentation détaillée : `PERF.md`.
+Ces mesures ne doivent pas être confondues
+avec les résultats des tests de charge k6.
 
 ---
 
 ## 23. Logs
 
-Le backend utilise des logs structurés.
+Les journaux sont utiles au diagnostic des erreurs
+et aux contrôles techniques, sans exposer les secrets.
 
-Fichier :
-
-```text
-backend/logs/datashare.log
-```
-
-Événements principaux :
-
-```text
-file_upload
-file_download
-file_delete
-```
-
-Les logs ne doivent pas contenir :
-
-```text
-mots de passe
-JWT
-tokens de téléchargement
-```
+Captures disponibles dans [reports/evidence/](reports/evidence/).
 
 ---
 
 ## 24. Maintenance
 
-Documentation :
+Le plan de maintenance précise :
 
-```text
-MAINTENANCE.md
-```
+- la fréquence des mises à jour ;
+- les risques liés aux dépendances ;
+- les sauvegardes et la restauration ;
+- la purge des fichiers expirés ;
+- les migrations Flyway ;
+- la surveillance et les contrôles réguliers.
 
-Elle couvre notamment :
-
-- diagnostic ;
-- logs ;
-- tests de non-régression ;
-- dépendances ;
-- PostgreSQL ;
-- stockage ;
-- sécurité ;
-- performance ;
-- migrations Flyway ;
-- Git.
+Consulter [MAINTENANCE.md](MAINTENANCE.md).
 
 ---
 
 ## 25. Intelligence artificielle
 
-L'intelligence artificielle a été utilisée comme outil d'assistance au développement et à l'apprentissage.
+La démarche d'utilisation, de revue, de correction
+et de supervision humaine est décrite dans :
 
-Documentation :
+- [AI_USAGE.md](AI_USAGE.md) ;
+- [AI_REVIEW.md](AI_REVIEW.md).
 
-```text
-AI_USAGE.md
-AI_REVIEW.md
-```
-
-Une User Story de téléchargement a été spécifiquement tracée.
-
-Le code produit avec assistance IA a été :
-
-```text
-relu
-compris
-testé
-corrigé
-tracé dans Git
-```
-
-La revue humaine a notamment permis de traiter un cas de Content-Type invalide avec un fallback :
-
-```text
-application/octet-stream
-```
+La revue du téléchargement par jeton est notamment
+accompagnée d'un test automatisé de non-régression.
 
 ---
 
@@ -812,7 +621,25 @@ AI_USAGE.md
 AI_REVIEW.md
 PERSONAL_DATA.md
 PORTABILITY.md
+FIGMA_CONFORMITE.md
+reports/README.md
+backend/HELP.md
+frontend/README.md
+docs/Documentation_technique.pdf
 ```
+
+La conformité visuelle est détaillée dans
+[FIGMA_CONFORMITE.md](FIGMA_CONFORMITE.md).
+
+Les captures, rapports JUnit et exports JaCoCo sont répertoriés
+dans [reports/README.md](reports/README.md).
+
+Les guides spécifiques aux deux modules sont disponibles dans
+[backend/HELP.md](backend/HELP.md) et
+[frontend/README.md](frontend/README.md).
+
+La documentation technique actualisée du projet est disponible ici :
+[Documentation technique DataShare](docs/Documentation_technique.pdf).
 
 ---
 

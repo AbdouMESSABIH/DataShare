@@ -83,7 +83,7 @@ npx ng test --watch=false
 Dernière validation :
 
 ```text
-40 SUCCESS (1er octobre 2026)
+44 SUCCESS (3 octobre 2026)
 ```
 
 ## Tests End-to-End
@@ -128,7 +128,7 @@ Inscription
 
 ## Performance frontend
 
-La mesure finale Lighthouse du build de production est documentée dans :
+La dernière campagne Lighthouse documentée (1er octobre 2026) figure dans :
 
 ```text
 ../PERF.md
@@ -151,5 +151,6 @@ Dernière campagne Lighthouse — 1er octobre 2026 :
 | CLS | 0 | 0 |
 | Speed Index | 2,7 s | 0,5 s |
 
-Mesures locales ponctuelles sur le build de production.
+Ces mesures locales ponctuelles précèdent le dernier build Angular
+du 3 octobre 2026, qui ne dispose pas d'un nouvel audit Lighthouse documenté.
 Les campagnes précédentes sont conservées dans `../PERF.md`.
