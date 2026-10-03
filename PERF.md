@@ -410,8 +410,12 @@ Certaines métriques peuvent légèrement varier entre deux exécutions Lighthou
 
 ## 12.1 Nouvelle campagne Lighthouse — 1er octobre 2026
 
-Une nouvelle analyse a été réalisée après les dernières
-modifications Angular et l'ajout de la balise meta description.
+Cette campagne Lighthouse a été réalisée le 1er octobre 2026,
+après les modifications Angular effectuées à cette date et l'ajout
+de la balise meta description.
+
+Elle précède les ajustements des 2 et 3 octobre. Aucun nouveau score
+Lighthouse n'est revendiqué pour le build final du 3 octobre.
 
 Conditions :
 - Lighthouse 13.4.0 ;
@@ -600,7 +604,192 @@ La balise meta description est désormais validée.
 
 ---
 
-# 19. Conclusion
+# 19. Budget de performance du frontend
+
+## 19.1 Budget Angular configuré
+
+Le fichier `frontend/angular.json` définit des budgets
+pour la compilation de production :
+
+| Type de budget | Avertissement | Erreur bloquante |
+|---|---:|---:|
+| Bundle initial (`initial`) | 500 kB | 1 MB |
+| Style individuel (`anyComponentStyle`) | 5 kB | 8 kB |
+
+Ces budgets permettent de repérer une augmentation excessive
+de la taille de l'application avant sa livraison.
+
+### Traitement des anciens avertissements SCSS
+
+Lors de la revue précédente, le seuil d'avertissement des
+styles individuels était fixé à 4 kB.
+
+Deux fichiers dépassaient ce seuil :
+
+| Fichier | Taille constatée | Ancien seuil |
+|---|---:|---:|
+| `history.component.scss` | 4,34 kB | 4 kB |
+| `upload.component.scss` | 4,08 kB | 4 kB |
+
+Le budget a ensuite été ajusté à 5 kB pour l'avertissement
+et 8 kB pour l'erreur bloquante.
+
+Cette modification est un ajustement explicite de la
+configuration de contrôle : elle ne doit pas être présentée
+comme une optimisation mesurée de ces deux fichiers CSS.
+
+La compilation actuelle n'émet plus d'avertissement de budget.
+Le poids total du bundle reste suivi séparément, avec un
+seuil d'avertissement initial de 500 kB.
+
+Les prochaines évolutions devront tenir compte de ces budgets
+et privilégier la réduction des styles redondants si leur
+volume augmente.
+
+## 19.2 Mesure de référence — 2 octobre 2026
+
+Cette mesure précède les derniers ajustements visuels de l'interface mobile.
+
+Commande exécutée :
+
+```bash
+cd frontend
+npm run build
+```
+
+Résultat de la compilation :
+
+| Fichier | Taille brute | Transfert estimé |
+|---|---:|---:|
+| main | 332,50 kB | 82,60 kB |
+| polyfills | 34,59 kB | 11,33 kB |
+| styles | 782 octets | 782 octets |
+| **Total initial** | **367,87 kB** | **94,71 kB** |
+
+Autres observations :
+
+- génération terminée en 1,980 seconde ;
+- code retour du build : 0 ;
+- aucun avertissement de budget émis ;
+- bundle initial inférieur de 132,13 kB au seuil
+  d'avertissement de 500 kB.
+
+La taille brute du bundle et son transfert estimé sont
+deux métriques différentes : le budget Angular initial
+ne doit pas être comparé uniquement aux 94,71 kB
+de transfert estimé.
+
+Les anciens avertissements concernant certains fichiers
+SCSS ne sont pas reproduits lors de cette compilation.
+Cela décrit le résultat actuel, sans constituer une
+garantie pour les futures modifications.
+
+## 19.2.1 Build intermédiaire après ajustements Figma
+
+Une nouvelle compilation de production a été effectuée
+le 2 octobre 2026 à 15 h 30, après les corrections
+responsive de l'interface.
+
+Commande :
+
+```bash
+cd frontend
+npm run build
+```
+
+Résultat :
+
+| Fichier | Taille brute | Transfert estimé |
+|---|---:|---:|
+| main | 337,20 kB | 83,65 kB |
+| polyfills | 34,59 kB | 11,33 kB |
+| styles | 5,50 kB | 1,22 kB |
+| **Total initial** | **377,29 kB** | **96,21 kB** |
+
+- Build réussi (code retour 0).
+- Aucun avertissement de budget Angular.
+- Taille brute inférieure au seuil d'avertissement
+  initial de 500 kB.
+- Augmentation de 9,42 kB par rapport à la mesure
+  de référence de 367,87 kB.
+
+Les 40 tests Angular ont également réussi lors
+de cette campagne intermédiaire.
+
+Cette mesure actualise le suivi technique sans
+effacer le résultat de référence précédent.
+
+## 19.2.2 Dernier build après ajout des formats — 3 octobre 2026
+
+Dernière compilation après les corrections visuelles Figma.
+
+Commande : `npm run build`
+
+| Fichier | Taille brute | Transfert estimé |
+|---|---:|---:|
+| main | 338,81 kB | 84,04 kB |
+| polyfills | 34,59 kB | 11,33 kB |
+| styles | 7,06 kB | 1,52 kB |
+| **Total initial** | **380,46 kB** | **96,89 kB** |
+
+Résultats :
+- 44 tests Angular réussis sur 44 ;
+- compilation réussie ;
+- code retour 0 ;
+- aucun avertissement de budget ;
+- seuil d'avertissement initial Angular : 500 kB.
+
+Preuve : `reports/evidence/frontend-bundle-metrics.png`.
+
+La mesure précédente de 377,29 kB est conservée
+dans la section 19.2.1 à titre historique.
+
+## 19.3 Comparaison des campagnes k6 et BCrypt
+
+| Indicateur | Campagne historique | Campagne du 1er octobre |
+|---|---:|---:|
+| Nombre de requêtes | 2 569 | 20 |
+| p95 | 91,47 ms | 475,39 ms |
+| Téléchargement protégé par mot de passe | Conditions différentes | Oui |
+| Rate limiting actuel | Avant les dernières protections | Actif |
+
+Le coût BCrypt configuré pour la vérification des mots
+de passe est de 12.
+
+Cette vérification effectue un travail cryptographique
+et peut contribuer au temps de traitement serveur.
+Cependant, les mesures disponibles ne permettent pas
+de quantifier séparément son impact.
+
+En effet, les deux campagnes ne présentent pas le même
+volume, les mêmes conditions de sécurité ni exactement
+le même parcours fonctionnel.
+
+Il serait donc incorrect d'attribuer directement
+la différence de p95 à BCrypt seul.
+
+Pour isoler cet impact, une étude ultérieure devra
+répéter un scénario identique, sur une machine stable,
+avec les mêmes données, la même concurrence et des
+mesures détaillées du temps passé côté backend.
+
+## 19.4 Suivi recommandé
+
+Après chaque changement significatif de l'interface :
+
+1. exécuter `npm run build` ;
+2. vérifier les budgets Angular et les avertissements ;
+3. comparer le dernier build (380,46 kB) à la mesure de référence (367,87 kB) ;
+4. renouveler les tests Lighthouse si le rendu change ;
+5. documenter les nouvelles mesures dans ce rapport.
+
+Après un changement du téléchargement ou de la sécurité
+backend, renouveler k6 avec un protocole reproductible
+et compatible avec les quotas de rate limiting.
+
+---
+
+# 20. Conclusion
 
 Les seuils k6 sont respectés pendant le nouveau scénario
 local de 20 téléchargements protégés.

@@ -62,7 +62,7 @@ source ~/.config/datashare/env
 Dernière validation :
 
 ```text
-Tests run: 49
+Tests run: 58
 Failures: 0
 Errors: 0
 Skipped: 0
@@ -93,7 +93,12 @@ fichier vide
 extension interdite
 faux PDF
 PDF déguisé
-fichier ZIP
+archive ZIP valide
+MP3 avec en-tête ID3 ou MPEG
+MP4 avec en-tête ftyp
+faux MP3, MP4 et ZIP
+signature ZIP tronquée
+archive ZIP déguisée en MP4
 taille supérieure à 1 Go
 expiration invalide
 token inconnu
@@ -164,7 +169,7 @@ npx ng test --watch=false
 Dernier résultat :
 
 ```text
-40 SUCCESS (1er octobre 2026)
+44 SUCCESS (3 octobre 2026)
 ```
 
 Les tests couvrent notamment :
@@ -205,7 +210,7 @@ dans le navigateur, notamment :
 - affichage de l'état d'expiration des fichiers.
 
 Ces vérifications manuelles ne sont pas comptabilisées
-dans les 40 tests Angular automatisés.
+dans les 44 tests Angular automatisés.
 
 Le composant de téléchargement teste notamment :
 
@@ -214,7 +219,7 @@ chargement des informations
 token absent
 404
 410
-mot de passe obligatoire
+mot de passe requis uniquement pour un fichier protégé
 téléchargement réussi
 mot de passe incorrect
 erreurs de téléchargement
@@ -292,17 +297,95 @@ Dernière mesure :
 
 ```text
 Instructions
-89,78 %
-1678 / 1869
+91,64 %
+1930 / 2106
 
 Branches
-70,48 %
-117 / 166
+72,31 %
+175 / 242
 
 Lignes
-91,15 %
-577 / 633
+91,89 %
+612 / 666
 ```
+
+---
+
+### Contrôle du seuil backend — 1er octobre 2026
+
+Le fichier `backend/pom.xml` configure JaCoCo avec :
+
+- élément contrôlé : `BUNDLE` ;
+- compteur : `BRANCH` ;
+- valeur : `COVEREDRATIO` ;
+- minimum : `0.70` ;
+- phase Maven : `verify`.
+
+Le contrôle a été exécuté avec :
+
+```bash
+cd backend
+source ~/.config/datashare/env
+./mvnw clean verify
+```
+
+Résultat :
+
+```text
+49 tests réussis
+Couverture branches : 70,48 % (117/166)
+All coverage checks have been met.
+SpotBugs : 0 bug, 0 erreur
+BUILD SUCCESS
+```
+
+Classes nécessitant une attention particulière :
+
+| Classe | Branches couvertes |
+|---|---:|
+| FileService | 64,71 % (66/102) |
+| DownloadController | 62,50 % (5/8) |
+
+`FileService` contient notamment les validations liées aux
+fichiers et à leur protection. `DownloadController` traite
+les réponses HTTP du téléchargement.
+
+Le seuil global est respecté, mais ces classes restent
+des cibles pertinentes pour de futurs tests de non-régression.
+
+### Couverture frontend — 3 octobre 2026
+
+Commande exécutée depuis `frontend/` :
+
+```bash
+npx ng test --watch=false --code-coverage
+```
+
+Résultat : 44/44 tests Angular réussis.
+
+| Métrique | Couverture |
+|---|---:|
+| Statements | 68,86 % (188/273) |
+| Branches | 54,87 % (45/82) |
+| Functions | 64,51 % (40/62) |
+| Lines | 68,63 % (186/271) |
+
+Rapport HTML généré localement :
+
+```text
+frontend/coverage/frontend/index.html
+```
+
+La couverture frontend reste perfectible, notamment
+sur les conditions alternatives (branches). Ces résultats
+ne doivent pas être confondus avec ceux de JaCoCo,
+qui concernent exclusivement le backend Java.
+
+
+La campagne précédente du 1er octobre 2026 mesurait
+67,95 % des instructions (statements) et 53,84 % des branches.
+La couverture frontend n'est pas soumise au seuil JaCoCo
+configuré pour le backend Java.
 
 ---
 
@@ -432,16 +515,61 @@ Documentation détaillée : `PERF.md`.
 
 ---
 
+### Validation actualisée — 3 octobre 2026
+
+Après l'ajout des formats MP3, MP4 et ZIP :
+
+```text
+58 tests backend réussis
+0 échec
+0 erreur
+
+Instructions : 91,64 % (1930 / 2106)
+Branches     : 72,31 % (175 / 242)
+Lignes       : 91,89 % (612 / 666)
+
+All coverage checks have been met.
+SpotBugs : 0 bug, 0 erreur
+BUILD SUCCESS
+```
+
+Neuf tests supplémentaires couvrent les signatures des
+nouveaux formats et le rejet des fichiers déguisés.
+
+La campagne du 1er octobre (49 tests) est conservée
+ci-dessus comme résultat historique.
+
+### Couverture actualisée des classes backend sensibles
+
+Dernière campagne JaCoCo du 3 octobre 2026 :
+
+| Classe | Branches couvertes |
+|---|---:|
+| FileService | 69,66 % (124/178) |
+| DownloadController | 62,50 % (5/8) |
+
+La couverture globale du backend atteint 72,31 %,
+soit 175 branches couvertes sur 242.
+
+FileService reste légèrement sous 70 % individuellement.
+DownloadController conserve trois branches non couvertes.
+
+Le seuil Maven de 70 % porte sur le bundle backend,
+pas sur chacune de ses classes. Ces deux classes restent
+des priorités pour les futurs tests de non-régression.
+
+---
+
 ## 12. Non-régression finale
 
 État validé :
 
 ```text
 Backend JUnit
-49 / 49 réussis
+58 / 58 réussis
 
 Frontend Angular
-40 / 40 réussis (1er octobre 2026)
+44 / 44 réussis (dernière exécution : 3 octobre 2026)
 
 Playwright
 3 / 3 réussis
@@ -454,7 +582,7 @@ SpotBugs
 0 erreur
 
 JaCoCo lignes
-91,15 %
+91,89 %
 ```
 
 Cette combinaison permet de vérifier :
@@ -468,6 +596,39 @@ Cette combinaison permet de vérifier :
 - les erreurs principales ;
 - le frontend ;
 - les principaux parcours utilisateurs.
+
+---
+
+## Critères d'acceptation fonctionnels
+
+Cette matrice relie les fonctionnalités principales aux
+vérifications réalisées. Les tests automatisés sont distingués
+des contrôles manuels.
+
+| Fonctionnalité | Critère d'acceptation | Vérification |
+|---|---|---|
+| Authentification | Un utilisateur peut créer un compte et se connecter | Tests AuthService et AuthIntegration |
+| Accès privé | Les pages privées nécessitent une authentification | Guard Angular et tests d'intégration |
+| Upload sans fichier | La soumission est refusée | Test UploadComponent |
+| Upload sans mot de passe | Le fichier peut être envoyé sans protection optionnelle | Test UploadComponent |
+| Upload protégé | Un mot de passe non vide de moins de 6 caractères est refusé | Test UploadComponent |
+| Upload valide | Un fichier sélectionné est envoyé avec sa durée d'expiration | Tests frontend et backend |
+| Limitation de débit | Le dépassement du quota est signalé par HTTP 429 | Tests backend et test UploadComponent |
+| Historique | Les filtres Tous, Actifs et Expirés fonctionnent | Tests Angular et contrôle manuel |
+| Lien de partage | Le fichier reste accessible par son token valide | Tests backend et parcours E2E |
+| Suppression | Le propriétaire peut supprimer son fichier | Tests backend et contrôle manuel |
+| Téléchargement protégé | Le mot de passe est vérifié côté serveur | Tests backend |
+| Expiration | Un lien expiré est refusé | Tests backend |
+| Interface responsive | Les écrans restent utilisables sur ordinateur et mobile | Comparaison manuelle avec Figma |
+
+Les six tests unitaires spécifiques à `UploadComponent`
+vérifient : absence de fichier, mot de passe trop court,
+upload sans mot de passe, upload avec mot de passe valide,
+réponse HTTP 429 et réinitialisation du formulaire.
+
+Cette matrice décrit les contrôles existants ; elle ne
+signifie pas que chaque critère dispose de son propre
+test automatisé indépendant.
 
 ---
 
