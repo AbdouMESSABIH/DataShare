@@ -579,4 +579,72 @@ describe('DownloadComponent', () => {
     }
   );
 
+
+  describe('expirationNotice', () => {
+
+    const referenceTime = Date.UTC(2026, 9, 2, 12, 0, 0);
+    const oneHour = 60 * 60 * 1000;
+    const oneDay = 24 * oneHour;
+
+    function createFileWithExpiration(
+      offset: number
+    ): DownloadComponent {
+      const component = createComponent('test-token');
+
+      component.fileInfo = {
+        originalName: 'document.pdf',
+        size: 100,
+        contentType: 'application/pdf',
+        expiresAt: new Date(
+          referenceTime + offset
+        ).toISOString(),
+        passwordProtected: false
+      };
+
+      return component;
+    }
+
+    beforeEach(() => {
+      spyOn(Date, 'now').and.returnValue(referenceTime);
+    });
+
+    it(
+      'should show an informational notice for a link valid for three days',
+      () => {
+        const component = createFileWithExpiration(3 * oneDay);
+
+        expect(component.expirationNotice).toEqual({
+          text: 'Ce lien expirera dans 3 jours.',
+          urgent: false
+        });
+      }
+    );
+
+    it('should warn when the link expires within 24 hours', () => {
+      const component = createFileWithExpiration(12 * oneHour);
+
+      expect(component.expirationNotice).toEqual({
+        text: 'Attention : ce lien expire dans moins de 24 heures.',
+        urgent: true
+      });
+    });
+
+    it('should flag an already expired link', () => {
+      const component = createFileWithExpiration(-oneHour);
+
+      expect(component.expirationNotice).toEqual({
+        text: 'Ce lien a expiré et ne peut plus être utilisé.',
+        urgent: true
+      });
+    });
+
+    it('should not show a notice without file information', () => {
+      const component = createComponent('test-token');
+
+      expect(component.expirationNotice).toBeNull();
+    });
+
+  });
+
+
 });

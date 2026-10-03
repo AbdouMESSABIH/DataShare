@@ -48,6 +48,50 @@ export class DownloadComponent
     formatFileSize;
 
 
+  /**
+   * Message calcule depuis la date d'expiration renvoyee par l'API.
+   * Aucune date ni duree restante n'est codee en dur.
+   */
+  get expirationNotice(): {
+    text: string;
+    urgent: boolean;
+  } | null {
+    if (!this.fileInfo) {
+      return null;
+    }
+
+    const expiration = new Date(this.fileInfo.expiresAt).getTime();
+
+    if (!Number.isFinite(expiration)) {
+      return null;
+    }
+
+    const remaining = expiration - Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    if (remaining <= 0) {
+      return {
+        text: 'Ce lien a expiré et ne peut plus être utilisé.',
+        urgent: true
+      };
+    }
+
+    if (remaining <= oneDay) {
+      return {
+        text: 'Attention : ce lien expire dans moins de 24 heures.',
+        urgent: true
+      };
+    }
+
+    const days = Math.ceil(remaining / oneDay);
+
+    return {
+      text: `Ce lien expirera dans ${days} jours.`,
+      urgent: false
+    };
+  }
+
+
   constructor(
     private route: ActivatedRoute,
     private fileService: FileService

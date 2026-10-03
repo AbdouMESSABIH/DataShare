@@ -17,7 +17,7 @@ describe('HomeComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent)
-      .toContain('Partagez vos fichiers simplement');
+      .toContain('Tu veux partager un fichier ?');
 
     const uploadLink: HTMLAnchorElement =
       fixture.nativeElement.querySelector('.cloud-cta');

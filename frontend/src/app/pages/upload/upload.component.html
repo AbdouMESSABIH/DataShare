@@ -4,7 +4,7 @@
     id="file"
     class="hidden-file-input"
     type="file"
-    accept=".txt,.pdf,.png,.jpg,.jpeg"
+    accept=".txt,.pdf,.png,.jpg,.jpeg,.mp3,.mp4,.zip"
     (change)="onFileSelected($event)"
   >
 
@@ -18,7 +18,7 @@
   >
 
     <p class="home-title">
-      Téléverser un fichier
+      Tu veux partager un fichier ?
     </p>
 
 
@@ -28,13 +28,21 @@
       aria-label="Choisir un fichier"
     >
 
-      <span class="cloud">
-        ☁
-      </span>
-
-      <span class="arrow">
-        ↑
-      </span>
+      <svg
+        class="cloud-upload-icon"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.7"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M7 18a5 5 0 0 1-.7-9.95A6.5 6.5 0 0 1 18.8 9.4 4.3 4.3 0 0 1 18 18"/>
+        <path d="M12 21V11"/>
+        <path d="m8.5 14.5 3.5-3.5 3.5 3.5"/>
+      </svg>
 
     </label>
 

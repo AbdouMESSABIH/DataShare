@@ -10,6 +10,28 @@
     </a>
 
 
+    <a
+      class="mobile-visitor-action"
+      [routerLink]="isAuthenticated ? '/history' : '/login'"
+    >
+      {{ isAuthenticated ? 'Mon espace' : 'Se connecter' }}
+    </a>
+
+    <a
+      class="mobile-register-action"
+      routerLink="/register"
+    >
+      Créer un compte
+    </a>
+
+    <a
+      class="mobile-private-action"
+      routerLink="/history"
+      (click)="closeMobileMenu()"
+    >
+      Mon espace
+    </a>
+
     <button
       class="mobile-menu-toggle"
       type="button"
@@ -21,12 +43,41 @@
       <span aria-hidden="true">☰</span>
     </button>
 
+    <button
+      type="button"
+      class="mobile-drawer-backdrop"
+      [class.open]="mobileMenuOpen"
+      [disabled]="!mobileMenuOpen"
+      aria-label="Fermer la navigation"
+      (click)="closeMobileMenu()"
+    ></button>
+
     <nav
       id="mobile-navigation"
       class="navigation"
       [class.mobile-open]="mobileMenuOpen"
       aria-label="Navigation principale"
     >
+      <div class="mobile-drawer-heading">
+        <button
+          type="button"
+          class="mobile-drawer-close"
+          aria-label="Fermer le menu"
+          (click)="closeMobileMenu()"
+        >
+          ×
+        </button>
+
+        <strong>DataShare</strong>
+      </div>
+
+      <a
+        class="mobile-drawer-history"
+        routerLink="/history"
+        (click)="closeMobileMenu()"
+      >
+        Mes fichiers
+      </a>
 
       <a
         class="nav-login"
@@ -50,9 +101,7 @@
         class="nav-upload"
         routerLink="/upload"
         (click)="closeMobileMenu()"
-      >
-        Téléverser
-      </a>
+      >Ajouter des fichiers</a>
 
 
       <a
@@ -68,9 +117,29 @@
         type="button"
         (click)="logout()"
       >
+        <svg
+          class="logout-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <path d="m16 17 5-5-5-5"/>
+          <path d="M21 12H9"/>
+        </svg>
         Déconnexion
       </button>
 
+      <p class="mobile-drawer-copyright">
+        Copyright DataShare® 2025
+      </p>
     </nav>
 
   </header>
@@ -83,12 +152,7 @@
   </main>
 
   <footer class="app-footer">
-    <p>
-      © 2026 DataShare — Partage temporaire de fichiers.
-    </p>
-    <p>
-      Liens disponibles de 1 à 7 jours.
-    </p>
+    <p>Copyright DataShare® 2025</p>
   </footer>
 
 </div>

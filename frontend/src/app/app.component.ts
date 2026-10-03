@@ -23,6 +23,10 @@ export class AppComponent {
 
   mobileMenuOpen = false;
 
+  get isAuthenticated(): boolean {
+    return this.authService.isAuthenticated();
+  }
+
   constructor(
     private authService: AuthService,
     private router: Router

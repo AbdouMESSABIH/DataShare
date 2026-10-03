@@ -40,7 +40,7 @@ export class HistoryComponent
     FileHistoryResponse[] = [];
 
 
-  statusFilter: 'all' | 'active' | 'expired' = 'all';
+  statusFilter: 'all' | 'active' | 'expired' = 'active';
 
   get filteredFiles(): FileHistoryResponse[] {
     if (this.statusFilter === 'all') {

@@ -70,3 +70,466 @@ select:focus-visible {
   outline: 3px solid rgba(226, 127, 41, 0.28);
   outline-offset: 3px;
 }
+
+/* FIGMA MOBILE - NAVIGATION DATASHARE */
+
+.mobile-visitor-action,
+.mobile-register-action,
+.mobile-private-action,
+.mobile-drawer-backdrop,
+.mobile-drawer-heading,
+.mobile-drawer-history,
+.mobile-drawer-copyright {
+  display: none;
+}
+
+@media (max-width: 600px) {
+
+  /* Visiteurs : DataShare + bouton de connexion. */
+
+  app-root .app-header .mobile-menu-toggle {
+    display: none;
+  }
+
+  app-root:has(app-home) .mobile-visitor-action,
+  app-root:has(app-register) .mobile-visitor-action,
+  app-root:has(app-download) .mobile-visitor-action,
+  app-root:has(app-login) .mobile-register-action {
+    display: inline-flex;
+    margin-left: auto;
+    padding: 9px 12px;
+    border-radius: 6px;
+    background: var(--ds-dark);
+    color: white;
+    font-size: 12px;
+    text-decoration: none;
+  }
+
+  /* Pages privées : fond orange très clair. */
+
+  app-root:has(app-history) .app-header,
+  app-root:has(app-upload) .app-header {
+    height: 72px;
+    min-height: 72px;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    background: #fff0e8;
+    border-bottom: 1px solid #f3d9cc;
+  }
+
+  app-root:has(app-history) .app-header .brand,
+  app-root:has(app-upload) .app-header .brand {
+    display: none;
+  }
+
+  /* Hamburger à gauche. */
+
+  app-root:has(app-history) .app-header .mobile-menu-toggle,
+  app-root:has(app-upload) .app-header .mobile-menu-toggle {
+    display: inline-flex;
+    order: -1;
+    margin: 0;
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    color: var(--ds-dark);
+    background: transparent;
+    font-size: 24px;
+  }
+
+  /* Bouton noir Mon espace à droite. */
+
+  app-root:has(app-history) .mobile-private-action,
+  app-root:has(app-upload) .mobile-private-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    min-height: 34px;
+    padding: 0 13px;
+    border-radius: 6px;
+    background: var(--ds-dark);
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  /* Fond assombri quand le rideau est ouvert. */
+
+  app-root .mobile-drawer-backdrop.open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    width: 100%;
+    border: 0;
+    background: rgba(0, 0, 0, .38);
+  }
+
+  /* Rideau latéral Figma. */
+
+  app-root .app-header .navigation.mobile-open {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 31;
+
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+
+    width: min(82vw, 315px);
+    height: 100dvh;
+    margin: 0;
+    padding: 20px 17px;
+
+    border-radius: 0;
+    background: linear-gradient(
+      180deg,
+      var(--ds-peach),
+      var(--ds-coral)
+    );
+
+    box-shadow: 4px 0 20px rgba(0, 0, 0, .12);
+  }
+
+  /* Grand DataShare blanc et bouton X. */
+
+  app-root .navigation .mobile-drawer-heading {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 35px;
+    color: white;
+  }
+
+  app-root .navigation .mobile-drawer-heading strong {
+    font-size: 25px;
+    font-weight: 800;
+  }
+
+  app-root .navigation .mobile-drawer-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    min-height: 30px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+  }
+
+  /* Masquer TOUS les autres liens du rideau. */
+
+  app-root .navigation.mobile-open > a:not(.mobile-drawer-history),
+  app-root .navigation.mobile-open > .nav-logout {
+    display: none;
+  }
+
+  /* Unique lien visible : Mes fichiers. */
+
+  app-root .navigation.mobile-open > .mobile-drawer-history {
+    display: flex;
+    align-items: center;
+    min-height: 42px;
+    padding: 10px 13px;
+
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .48);
+    color: #87451f;
+
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  /* Copyright au bas du rideau. */
+
+  app-root .navigation .mobile-drawer-copyright {
+    display: block;
+    margin: auto 0 0;
+    color: white;
+    font-size: 11px;
+  }
+
+  app-root:has(app-history) .app-footer {
+    display: none;
+  }
+}
+
+/* RIDEAU MOBILE - styles globaux */
+
+@media (max-width: 600px) {
+
+  /* Le panneau occupe exactement toute la hauteur. */
+  app-root .app-header .navigation.mobile-open {
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    z-index: 31;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch;
+
+    width: min(82vw, 315px);
+    height: 100dvh;
+    margin: 0;
+    padding: 20px 17px;
+
+    border-radius: 0;
+    background: linear-gradient(
+      180deg,
+      var(--ds-peach),
+      var(--ds-coral)
+    );
+  }
+
+  /* Ordre exact demandé :
+     1. X + DataShare
+     2. Mes fichiers
+     3. Déconnexion
+     4. Copyright tout en bas */
+
+  app-root .navigation.mobile-open > .mobile-drawer-heading {
+    display: flex !important;
+    order: 1;
+    margin-bottom: 30px;
+  }
+
+  app-root .navigation.mobile-open > a,
+  app-root .navigation.mobile-open > button {
+    display: none !important;
+  }
+
+  app-root .navigation.mobile-open > .mobile-drawer-history {
+    display: flex !important;
+    order: 2;
+
+    align-items: center;
+    min-height: 42px;
+    padding: 10px 13px;
+
+    color: #87451f;
+    background: rgba(255, 255, 255, .48);
+    border-radius: 8px;
+
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  app-root .navigation.mobile-open > .nav-logout {
+    display: flex !important;
+    order: 3;
+
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+
+    min-height: 42px;
+    margin-top: 10px;
+    padding: 10px 13px;
+
+    color: #87451f;
+    background: rgba(255, 255, 255, .48);
+    border: 0;
+    border-radius: 8px;
+
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  app-root .navigation.mobile-open > .mobile-drawer-copyright {
+    display: block !important;
+    order: 4;
+
+    margin-top: auto;
+    margin-bottom: 0;
+
+    color: white;
+    font-size: 11px;
+  }
+
+  /* Supprimer la bande blanche du pied de page global
+     uniquement pendant l'ouverture du rideau. */
+  app-root:has(.navigation.mobile-open) .app-footer {
+    display: none !important;
+  }
+}
+
+
+/* FIGMA - icones des fichiers mobiles */
+
+app-history .mobile-file-icon,
+app-history .mobile-file-lock {
+  display: none;
+}
+
+@media (max-width: 700px) {
+
+  app-history .file-item > .mobile-file-icon {
+    display: block;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--ds-dark);
+  }
+
+  app-history .file-item > .mobile-file-lock {
+    display: block;
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    margin-left: auto;
+    color: var(--ds-dark);
+  }
+
+  /* Éviter d'afficher deux cadenas sur mobile. */
+  app-history .desktop-file-lock {
+    display: none;
+  }
+
+  app-history .file-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  app-history .mobile-file-menu {
+    margin-left: 0;
+  }
+
+  app-history .mobile-file-menu summary {
+    width: 29px;
+    height: 32px;
+  }
+
+  app-history .file-item {
+    gap: 8px;
+    align-items: center;
+  }
+}
+
+
+/* FIGMA - icone SVG cloud upload */
+
+.cloud-upload-icon {
+  display: block;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  color: #ffffff;
+}
+
+.cloud-button .cloud-upload-icon,
+.cloud-cta .cloud-upload-icon {
+  position: relative;
+  z-index: 1;
+}
+
+/* FIGMA - messages expiration du telechargement */
+
+app-download .expiration-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 20px;
+  padding: 13px 14px;
+  border: 1px solid #b7d9f3;
+  border-radius: 9px;
+  background: #edf6ff;
+  color: #21557b;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+app-download .expiration-notice p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+app-download .expiration-symbol {
+  flex-shrink: 0;
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+app-download .expiration-notice.expiration-warning {
+  border-color: #f0c68d;
+  background: #fff3df;
+  color: #85500d;
+}
+
+/* FIGMA - bouton upload dans le rideau mobile */
+
+@media (max-width: 600px) {
+
+  /* Même apparence et mêmes dimensions que Mes fichiers. */
+  app-root .navigation.mobile-open > .mobile-drawer-history,
+  app-root .navigation.mobile-open > .nav-upload {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 42px;
+    box-sizing: border-box;
+    padding: 10px 13px;
+    border: 0;
+    border-radius: 8px;
+    background: #303030;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  app-root .navigation.mobile-open > .mobile-drawer-history {
+    order: 2;
+  }
+
+  app-root .navigation.mobile-open > .nav-upload {
+    order: 3;
+    margin-top: 10px;
+  }
+
+  app-root .navigation.mobile-open > .nav-logout {
+    order: 4;
+  }
+
+  app-root .navigation.mobile-open > .mobile-drawer-copyright {
+    order: 5;
+  }
+}
+
+/* FIGMA - double cercle autour des icones */
+
+/*
+ * Halo exterieur sombre et translucide.
+ * Le cercle central conserve sa couleur et son icone.
+ * Applicable sur mobile et ordinateur.
+ */
+
+app-home .visitor-home .cloud-cta,
+app-upload .upload-home .cloud-button,
+app-download .available-state .download-icon {
+  border-radius: 50%;
+
+  box-shadow:
+    0 0 0 18px rgba(48, 25, 39, 0.20),
+    0 8px 20px rgba(0, 0, 0, 0.14);
+}
+
+/* Laisser suffisamment de place au halo sur le téléchargement. */
+app-download .available-state .download-icon {
+  margin-top: 18px;
+  margin-bottom: 36px;
+}

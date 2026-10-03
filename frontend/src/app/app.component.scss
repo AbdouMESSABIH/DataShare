@@ -254,3 +254,136 @@
     width: 100%;
   }
 }
+
+
+/* DataShare - conformité Figma history */
+
+.app-footer {
+  min-height: 40px;
+  justify-content: flex-start;
+  padding: 8px 20px;
+  color: white;
+  text-align: left;
+}
+
+:host:has(app-history) .app-shell {
+  background: #fff9f6;
+}
+
+:host:has(app-history) .app-header {
+  background: linear-gradient(
+    90deg,
+    var(--ds-peach) 0 205px,
+    #fff0e8 205px 100%
+  );
+}
+
+:host:has(app-history) .brand {
+  color: white;
+  font-size: 27px;
+}
+
+:host:has(app-history) .nav-upload {
+  font-size: 13px;
+}
+
+:host:has(app-history) .nav-logout {
+  padding: 0 8px;
+  color: var(--ds-orange);
+  background: transparent;
+}
+
+:host:has(app-history) .nav-logout:hover {
+  color: var(--ds-orange-dark);
+  background: transparent;
+}
+
+:host:has(app-history) .app-footer {
+  background: linear-gradient(
+    90deg,
+    var(--ds-coral) 0 205px,
+    #fff9f6 205px 100%
+  );
+}
+
+@media (max-width: 700px) {
+  :host:has(app-history) .app-header {
+    background: #fff9f6;
+  }
+
+  :host:has(app-history) .brand {
+    color: var(--ds-black);
+    font-size: 24px;
+  }
+
+  :host:has(app-history) .app-footer {
+    background: #fff9f6;
+    color: var(--ds-dark);
+  }
+}
+
+/* Figma - footer visible et icone de deconnexion */
+
+/* Le copyright reste visible, sans défilement. */
+.app-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 12;
+
+  min-height: 36px;
+  padding: 8px 20px;
+
+  background: var(--ds-coral);
+  justify-content: flex-start;
+  text-align: left;
+
+  flex-direction: row;
+}
+
+/* Éviter que le footer masque le contenu des autres pages. */
+:host:not(:has(app-history)) .app-content {
+  padding-bottom: 40px;
+}
+
+/* Icône de sortie : page Mon espace uniquement. */
+.logout-icon {
+  display: none;
+}
+
+:host:has(app-history) .nav-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+:host:has(app-history) .logout-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--ds-orange);
+}
+
+@media (max-width: 700px) {
+  .app-footer {
+    padding: 8px 16px;
+    align-items: center;
+  }
+}
+
+/* FIGMA - couleurs des en-tetes mobiles prives */
+
+@media (max-width: 700px) {
+
+  /* Upload : continuité avec le haut du dégradé pêche. */
+  :host:has(app-upload) .app-header {
+    background: var(--ds-peach);
+  }
+
+  /* Mon espace : même orange clair que les cartes de fichiers. */
+  :host:has(app-history) .app-header {
+    background: #fff0e8;
+  }
+}

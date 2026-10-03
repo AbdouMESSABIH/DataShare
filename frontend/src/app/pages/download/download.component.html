@@ -29,9 +29,7 @@
       *ngIf="fileInfo"
     >
 
-      <div class="download-icon">
-        ↓
-      </div>
+
 
 
       <h1>
@@ -93,6 +91,19 @@
 
       </div>
 
+
+      <!-- Information ou alerte selon l'expiration du lien -->
+      <div
+        *ngIf="expirationNotice as notice"
+        class="expiration-notice"
+        [class.expiration-warning]="notice.urgent"
+        [attr.role]="notice.urgent ? 'alert' : 'status'"
+      >
+        <span class="expiration-symbol" aria-hidden="true">
+          {{ notice.urgent ? '⚠' : 'ⓘ' }}
+        </span>
+        <p>{{ notice.text }}</p>
+      </div>
 
       <div
         class="form-group"

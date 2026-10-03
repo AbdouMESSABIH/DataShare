@@ -87,9 +87,7 @@
 
     <aside class="workspace-sidebar">
 
-      <h1>
-        Mon espace
-      </h1>
+
 
 
       <p>
@@ -97,25 +95,10 @@
       </p>
 
 
-      <a
-        class="sidebar-upload"
-        routerLink="/upload"
-      >
-        + Téléverser
-      </a>
 
 
-      <div class="sidebar-count">
 
-        <strong>
-          {{ totalElements }}
-        </strong>
 
-        <span>
-          fichier(s)
-        </span>
-
-      </div>
 
     </aside>
 
@@ -186,12 +169,33 @@
           *ngFor="let file of filteredFiles"
         >
 
+          <!-- Icône de fichier visible sur mobile uniquement -->
+          <svg
+            class="mobile-file-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 2v6h6"/>
+            <path d="M8 13h8"/>
+            <path d="M8 17h5"/>
+          </svg>
+
           <div class="file-main">
 
             <strong>
               {{ file.originalName }}
 
               <span
+                class="desktop-file-lock"
                 *ngIf="file.passwordProtected"
                 role="img"
                 aria-label="Fichier protégé par mot de passe"
@@ -200,115 +204,84 @@
             </strong>
 
             <span>
-              {{ file.contentType }}
+              {{ isExpired(file.expiresAt)
+      ? 'Expiré'
+      : 'Expire le ' + (file.expiresAt | date:'dd/MM/yyyy') }}
             </span>
 
           </div>
 
-
-          <div class="file-meta">
-
-            <div>
-
-              <span>
-                Taille
-              </span>
-
-              <strong>
-                {{
-                  formatFileSize(
-                    file.size
-                  )
-                }}
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                Créé le
-              </span>
-
-              <strong>
-                {{
-                  file.createdAt
-                    | date:'dd/MM/yyyy'
-                }}
-              </strong>
-
-            </div>
-
-
-            <div>
-
-              <span>
-                Expire le
-              </span>
-
-              <strong>
-                {{
-                  file.expiresAt
-                    | date:'dd/MM/yyyy'
-                }}
-
-                <span
-                  class="expiry-status"
-                  [class.expired]="isExpired(file.expiresAt)"
-                >
-                  {{ isExpired(file.expiresAt) ? 'Expiré' : 'Actif' }}
-                </span>
-              </strong>
-
-            </div>
-
-          </div>
-
-
-          <a
-            class="share-link"
-            [routerLink]="[
-              '/download',
-              file.downloadToken
-            ]"
+          <!-- Cadenas à droite, uniquement si protégé -->
+          <svg
+            *ngIf="file.passwordProtected"
+            class="mobile-file-lock"
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            role="img"
+            aria-label="Fichier protégé"
           >
-            {{
-              getShareUrl(
-                file.downloadToken
-              )
-            }}
-          </a>
+            <rect x="4" y="10" width="16" height="11" rx="2"/>
+            <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+          </svg>
 
-
-          <div class="actions">
-
-            <button
-              class="copy-action"
-              type="button"
-              (click)="
-                copyShareLink(
-                  file.downloadToken
-                )
-              "
-            >
-              Copier
-            </button>
-
-
+          <div
+            class="actions"
+            *ngIf="!isExpired(file.expiresAt); else expiredActions"
+          >
             <button
               class="delete-action"
               type="button"
-              (click)="
-                deleteFile(
-                  file.id
-                )
-              "
+              (click)="deleteFile(file.id)"
             >
               Supprimer
             </button>
 
+            <a
+              class="access-action"
+              [routerLink]="['/download', file.downloadToken]"
+            >
+              Accéder <span aria-hidden="true">→</span>
+            </a>
           </div>
+
+          <!-- Actions compactes pour la version mobile -->
+          <details
+            class="mobile-file-menu"
+            *ngIf="!isExpired(file.expiresAt)"
+          >
+            <summary
+              aria-label="Afficher les actions du fichier"
+              title="Actions du fichier"
+            >⋮</summary>
+
+            <div class="mobile-file-actions">
+              <a
+                [routerLink]="['/download', file.downloadToken]"
+              >
+                Accéder
+              </a>
+
+              <button
+                type="button"
+                (click)="deleteFile(file.id)"
+              >
+                Supprimer
+              </button>
+            </div>
+          </details>
+
+          <ng-template #expiredActions>
+            <span class="expired-note">
+              Ce fichier a expiré, il n'est plus stocké chez nous.
+            </span>
+          </ng-template>
 
         </article>
 
