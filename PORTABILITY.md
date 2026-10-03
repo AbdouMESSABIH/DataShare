@@ -53,8 +53,10 @@ Les principaux composants nécessaires sont :
 
 ## Lancement du backend
 
+Adapter `/chemin/vers/DataShare` à l'emplacement réel du dépôt.
+
 ```bash
-cd backend
+cd /chemin/vers/DataShare/backend
 source ~/.config/datashare/env
 ./mvnw spring-boot:run
 ```
@@ -70,8 +72,10 @@ Elles ne doivent pas être enregistrées dans le dépôt Git.
 
 ## Lancement du frontend
 
+Dans un autre terminal, utiliser le même chemin de dépôt :
+
 ```bash
-cd frontend
+cd /chemin/vers/DataShare/frontend
 npm install
 npm start
 ```

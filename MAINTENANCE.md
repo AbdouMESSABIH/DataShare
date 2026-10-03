@@ -164,13 +164,13 @@ backend/logs/datashare.log
 Afficher les dernières lignes :
 
 ```bash
-tail -n 50 backend/logs/datashare.log
+tail -n 50 "$HOME/Projets/DataShare/backend/logs/datashare.log"
 ```
 
 Suivre les logs en temps réel :
 
 ```bash
-tail -f backend/logs/datashare.log
+tail -f "$HOME/Projets/DataShare/backend/logs/datashare.log"
 ```
 
 Événements métier principaux :
@@ -262,10 +262,10 @@ X-Download-Password
 Comportements attendus :
 
 ```text
-token inconnu
+token inconnu ou métadonnées déjà supprimées par la purge
 → 404 Not Found
 
-token expiré
+token expiré avec métadonnées encore présentes
 → 410 Gone
 
 mot de passe absent
@@ -335,7 +335,7 @@ source ~/.config/datashare/env
 Dernière validation :
 
 ```text
-49 tests réussis
+58 tests réussis
 0 échec
 0 erreur
 BUILD SUCCESS
@@ -362,9 +362,9 @@ backend/target/site/jacoco/index.html
 Derniers résultats :
 
 ```text
-Instructions : 89,78 % (1678 / 1869)
-Branches     : 70,48 % (117 / 166)
-Lignes       : 91,15 % (577 / 633)
+Instructions : 91,64 % (1930 / 2106)
+Branches     : 72,31 % (175 / 242)
+Lignes       : 91,89 % (612 / 666)
 ```
 
 Une baisse importante après une modification doit être analysée.
@@ -417,7 +417,7 @@ npx ng test --watch=false
 Dernier résultat :
 
 ```text
-40 tests réussis (1er octobre 2026)
+44 tests réussis (3 octobre 2026)
 ```
 
 ---
@@ -530,6 +530,7 @@ Avant une mise à jour importante :
 Commandes principales :
 
 ```bash
+cd ~/Projets/DataShare/backend
 ./mvnw clean test
 ./mvnw spotbugs:check
 ```
@@ -837,7 +838,123 @@ artefacts temporaires
 
 ---
 
-## 30. Checklist après maintenance
+## 30. Calendrier de maintenance préventive
+
+Ce calendrier est une proposition d'exploitation pour DataShare.
+Il distingue les traitements déjà automatisés des contrôles
+à organiser par le mainteneur.
+
+| Fréquence | Opération | Mode | Responsable |
+|---|---|---|---|
+| Au démarrage, puis environ toutes les heures | Purge des fichiers expirés | Automatique, Spring Boot | Application |
+| Chaque jour | Contrôler les logs, erreurs HTTP, espace disque et état de PostgreSQL | Manuel, à planifier | Mainteneur |
+| Chaque jour en exploitation réelle | Sauvegarder PostgreSQL et le répertoire de fichiers de manière cohérente | À automatiser | Mainteneur |
+| Chaque semaine | Vérifier les échecs de purge et la cohérence entre fichiers physiques et métadonnées | Manuel | Mainteneur |
+| Chaque semaine | Exécuter les audits npm et OWASP Dependency-Check avec des données actualisées | Manuel ou future CI | Mainteneur |
+| Chaque mois | Examiner les nouvelles versions Angular, Spring Boot et les dépendances Java | Manuel | Mainteneur |
+| Chaque mois | Vérifier la taille, la protection et la rétention des sauvegardes | Manuel | Mainteneur |
+| Chaque trimestre | Tester une restauration sur un environnement isolé | Manuel | Mainteneur |
+| Après chaque modification significative | Relancer les tests, les contrôles statiques, le build et les vérifications fonctionnelles | Commandes existantes | Développeur |
+
+### Tâche actuellement automatisée
+
+Le service `ExpiredFileCleanupService` utilise `@Scheduled`
+avec les paramètres configurables suivants :
+
+```properties
+datashare.cleanup.initial-delay-ms=60000
+datashare.cleanup.fixed-delay-ms=3600000
+```
+
+Par défaut, le premier lancement intervient après 60 secondes.
+Le délai fixe entre deux exécutions est ensuite d'une heure,
+calculée à partir de la fin de l'exécution précédente.
+
+Cette tâche nécessite que l'application Spring Boot soit
+démarrée et fonctionne correctement.
+
+### Sauvegardes : procédure à industrialiser
+
+La commande `pg_dump` est documentée dans la section 23,
+mais aucun ordonnancement automatique des sauvegardes
+n'est revendiqué dans ce MVP.
+
+Une future exploitation devra prévoir :
+
+- la sauvegarde cohérente de PostgreSQL et des fichiers stockés ;
+- un emplacement de sauvegarde distinct du stockage applicatif ;
+- des droits d'accès restrictifs et un chiffrement adapté ;
+- une durée de conservation définie ;
+- une vérification régulière de l'intégrité des sauvegardes ;
+- un test de restauration sur un environnement isolé ;
+- le respect des dates d'expiration et des règles de suppression
+  des données, y compris dans les sauvegardes.
+
+Une sauvegarde de la base seule ne permet pas nécessairement
+de restaurer les fichiers physiques associés.
+
+### Contrôles à effectuer après une mise à jour
+
+```bash
+cd ~/Projets/DataShare/backend
+source ~/.config/datashare/env
+./mvnw clean verify
+```
+
+Puis, depuis `frontend/` :
+
+```bash
+cd ~/Projets/DataShare/frontend
+npx ng lint
+npx ng test --watch=false --code-coverage
+npm run build
+npx playwright test
+```
+
+Les audits de sécurité et les tests de performance doivent
+également être renouvelés après les changements concernés.
+
+---
+
+## 31. Analyse des risques et mesures de maintenance
+
+Cette matrice identifie les principaux risques techniques
+du MVP. Les niveaux indiqués constituent une appréciation
+préventive pour organiser les contrôles, et non le résultat
+d'une analyse quantitative en production.
+
+| Risque | Conséquence possible | Prévention | Réaction en cas d'incident |
+|---|---|---|---|
+| Indisponibilité de PostgreSQL | Authentification et gestion des fichiers perturbées | Surveillance du service et sauvegardes | Vérifier le journal PostgreSQL, rétablir le service et contrôler l'intégrité |
+| Saturation du stockage local | Échec des téléversements | Surveiller l'espace libre et la purge | Libérer de l'espace sans supprimer arbitrairement les fichiers actifs |
+| Incohérence base/fichiers | Métadonnées sans fichier physique, ou inversement | Sauvegarde cohérente et contrôle régulier | Identifier les écarts, restaurer les éléments disponibles |
+| Défaillance de la purge | Conservation excessive de fichiers expirés | Vérifier les événements de nettoyage dans les logs | Diagnostiquer le service planifié et relancer après correction |
+| Vulnérabilité d'une dépendance | Exposition à une faille connue | Audits npm/OWASP et veille de sécurité | Évaluer le risque, appliquer une version corrigée et refaire les tests |
+| Régression après mise à jour | Fonctionnalité indisponible ou incorrecte | Tests unitaires, intégration, E2E et validation Maven | Revenir à une version applicative validée après analyse |
+| Migration Flyway incorrecte | Schéma ou données incompatibles | Relecture, migration additive et sauvegarde préalable | Stopper le déploiement et appliquer une procédure de récupération vérifiée |
+| Fuite de secrets dans Git ou les logs | Accès non autorisé | Variables d'environnement et revue des modifications | Révoquer les secrets exposés, les renouveler et rechercher les traces |
+| Abus des liens publics | Surcharge ou téléchargements excessifs | Expiration, mot de passe optionnel et rate limiting | Examiner les logs, ajuster les protections et bloquer l'abus si nécessaire |
+| Déploiement sur plusieurs instances | Limitation de débit incohérente et stockage non partagé | Conserver l'architecture mono-instance du MVP | Prévoir des compteurs partagés et un stockage adapté avant distribution |
+
+### Risque actuellement identifié : dépendances Angular
+
+L'audit du 1er octobre 2026 signale encore sept
+vulnérabilités dans les dépendances de production
+du frontend.
+
+La mise à jour majeure proposée par npm n'a pas été
+appliquée automatiquement pour éviter une régression
+non maîtrisée.
+
+Le traitement devra prévoir l'étude des avis de sécurité,
+l'analyse de leur applicabilité, une stratégie de migration
+Angular compatible et des tests complets.
+
+Les résultats détaillés figurent dans `SECURITY.md`.
+
+---
+
+## 32. Checklist après maintenance
 
 Avant de considérer une maintenance comme terminée :
 
