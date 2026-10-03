@@ -252,6 +252,9 @@ PDF
 PNG
 JPG
 JPEG
+MP3
+MP4
+ZIP
 ```
 
 La taille maximale autorisée est :
@@ -295,6 +298,10 @@ Si aucune valeur n’est fournie, la durée utilisée est :
 Ce champ contient le mot de passe protégeant le téléchargement.
 
 Le paramètre est optionnel au niveau de l’API.
+
+Lorsqu'un mot de passe est renseigné, il doit contenir
+au minimum six caractères. Un champ absent ou vide
+correspond à un partage sans protection par mot de passe.
 
 Dans l'interface Angular actuelle, le mot de passe est également optionnel. Un fichier peut être téléversé avec ou sans protection par mot de passe.
 
@@ -458,7 +465,8 @@ Exemple :
       "contentType": "application/pdf",
       "downloadToken": "395dbacc-401c-44bd-94c3-6f04038cf8ce",
       "createdAt": "2026-09-29T01:40:00",
-      "expiresAt": "2026-10-06T01:40:00"
+      "expiresAt": "2026-10-06T01:40:00",
+      "passwordProtected": true
     }
   ],
   "page": 0,
@@ -613,7 +621,8 @@ Exemple :
   "originalName": "document.pdf",
   "size": 2048000,
   "contentType": "application/pdf",
-  "expiresAt": "2026-10-06T01:40:00"
+  "expiresAt": "2026-10-06T01:40:00",
+  "passwordProtected": true
 }
 ```
 
@@ -639,11 +648,11 @@ Date et heure d’expiration du partage.
 
 ### 404 Not Found
 
-Le token est invalide ou le fichier physique n’existe plus.
+Le token est inconnu, le fichier physique n’existe plus, ou les métadonnées du partage ont déjà été supprimées par la purge.
 
 ### 410 Gone
 
-Le lien de téléchargement a expiré.
+Le lien a expiré, mais ses métadonnées sont encore présentes en base.
 
 ---
 
@@ -757,11 +766,11 @@ Le fichier est protégé et le mot de passe est absent ou incorrect.
 
 ### 404 Not Found
 
-Le token est invalide ou le fichier physique n’existe plus.
+Le token est inconnu, le fichier physique n’existe plus, ou les métadonnées du partage ont déjà été supprimées par la purge.
 
 ### 410 Gone
 
-Le lien est expiré.
+Le lien a expiré, mais ses métadonnées sont encore présentes en base.
 
 ### 429 Too Many Requests
 
@@ -770,241 +779,133 @@ est dépassé. Voir la section 15.
 
 ---
 
+<!-- Synthèse API : 3 octobre 2026 -->
+
 # 11. Protection des fichiers par mot de passe
 
-Lors du téléversement :
+Le mot de passe de partage est facultatif lors du téléversement.
 
-```text
-Utilisateur
-    │
-    │ mot de passe
-    ▼
-Spring Boot
-    │
-    ▼
-BCrypt
-    │
-    ▼
-Hash
-    │
-    ▼
-PostgreSQL
-```
+Lorsqu'il est renseigné, il doit contenir au moins six
+caractères utiles. Le backend conserve uniquement son hash
+BCrypt dans PostgreSQL, jamais sa valeur en clair.
 
-Le mot de passe original n’est jamais enregistré directement.
+Le téléchargement d'un fichier protégé nécessite l'en-tête
+HTTP `X-Download-Password`.
 
-Exemple :
+Le backend compare le mot de passe transmis au hash enregistré :
 
-```text
-Secret123!
-```
+- mot de passe correct : téléchargement autorisé ;
+- mot de passe incorrect ou absent : HTTP 403 ;
+- fichier non protégé : aucun mot de passe nécessaire.
 
-n’est pas stocké tel quel dans la base de données.
-
-Une valeur hashée est enregistrée à la place.
-
-Exemple conceptuel :
-
-```text
-$2a$10$...
-```
-
-Lors du téléchargement :
-
-```text
-Mot de passe saisi
-        │
-        ▼
-X-Download-Password
-        │
-        ▼
-Spring Boot
-        │
-        ▼
-BCrypt.matches(...)
-        │
-        ├── faux
-        │     ↓
-        │    403
-        │
-        └── vrai
-              ↓
-        téléchargement
-```
+Les réponses de consultation et d'historique exposent
+l'indicateur booléen `passwordProtected`. Il permet notamment
+à Angular d'afficher le cadenas et le champ de mot de passe
+uniquement lorsque cela est nécessaire.
 
 ---
 
 # 12. Expiration des fichiers
 
-Chaque fichier possède notamment :
+Chaque fichier possède une date de création et une date
+d'expiration.
 
-```text
-createdAt
-expiresAt
-```
+La durée est comprise entre 1 et 7 jours, avec 7 jours
+par défaut si aucune durée n'est transmise.
 
-La durée maximale de partage est :
+Un lien expiré retourne `410 Gone` tant que ses métadonnées
+existent encore dans PostgreSQL. Après leur suppression par
+la purge automatique, le token n'est plus retrouvé et l'API
+retourne `404 Not Found`, comme pour un token inconnu.
 
-```text
-7 jours
-```
-
-Lorsqu’un lien est expiré, l’API retourne :
-
-```text
-410 Gone
-```
-
-Les fichiers expirés peuvent ensuite être supprimés automatiquement par le service de nettoyage prévu dans le back-end.
+Le backend dispose également d'une purge planifiée
+des fichiers expirés.
 
 ---
 
 # 13. Pagination
 
-L’historique des fichiers utilise une pagination côté serveur.
+L'historique utilise une pagination côté serveur.
 
-Exemple :
+Exemple : `GET /api/files?page=0&size=10`
 
-```text
-GET /api/files?page=0&size=10
-```
+| Paramètre | Contrainte |
+|---|---|
+| `page` | Entier supérieur ou égal à 0 |
+| `size` | Entre 1 et 50 |
 
-Contraintes :
+La réponse contient notamment `content`, `page`, `size`,
+`totalElements` et `totalPages`.
 
-```text
-page >= 0
-1 <= size <= 50
-```
-
-Cette pagination évite de charger l’intégralité de l’historique d’un utilisateur dans une seule réponse.
+L'accès à l'historique nécessite un JWT valide.
 
 ---
 
 # 14. Validation des fichiers
 
-DataShare contrôle plusieurs caractéristiques avant d’accepter un fichier :
+La taille maximale autorisée est de 1 Go.
 
-```text
-taille
-extension
-contenu réel
-```
+| Extension | Type MIME attendu |
+|---|---|
+| TXT | `text/plain` |
+| PDF | `application/pdf` |
+| PNG | `image/png` |
+| JPG, JPEG | `image/jpeg` |
+| MP3 | `audio/mpeg` |
+| MP4 | `video/mp4` |
+| ZIP | `application/zip` |
 
-Formats actuellement acceptés :
+Le backend contrôle l'extension et détecte le type
+à partir du contenu, indépendamment du MIME déclaré
+par le navigateur.
 
-```text
-TXT
-PDF
-PNG
-JPG
-JPEG
-```
+Les contrôles portent notamment sur les signatures
+PDF, PNG, JPEG, MP3, MP4 et ZIP, ainsi que sur
+la validité du contenu texte UTF-8.
 
-Le serveur vérifie que le contenu réel est cohérent avec le format attendu.
+Une incohérence entraîne un refus HTTP 415.
 
-Par exemple, un fichier nommé :
+La détection par signature ne constitue pas une analyse
+antivirus ni une validation exhaustive des fichiers.
 
-```text
-document.pdf
-```
-
-doit réellement correspondre à un fichier PDF valide.
-
-Si le fichier n’est pas conforme, la requête peut être refusée avec :
-
-```text
-415 Unsupported Media Type
-```
+Voir `SECURITY.md` pour les limites de ces contrôles.
 
 ---
 
 # 15. Limitation de débit
 
-Le backend applique plusieurs limitations de débit afin
-de réduire les abus sur les endpoints sensibles.
+Le backend applique des quotas pour limiter les abus
+sur les endpoints sensibles.
 
-## Connexion
+| Endpoint | Limitation |
+|---|---|
+| `POST /api/auth/login` | 10 requêtes/minute/IP |
+| `POST /api/files/upload` | 20 requêtes/minute/IP |
+| `GET /api/download/{token}/file` | 60 requêtes/minute/IP |
+| `GET /api/download/{token}/file` | 30 requêtes/minute/token |
 
-Endpoint :
+Les deux limites du téléchargement sont complémentaires.
 
-```text
-POST /api/auth/login
-```
+En cas de dépassement, le serveur retourne
+`429 Too Many Requests`.
 
-Limite :
+Pour la connexion et le téléversement, la réponse
+de limitation comporte `Retry-After: 60`.
 
-```text
-10 requêtes par minute et par adresse IP
-```
+Une vérification fonctionnelle du téléchargement
+réalisée le 1er octobre 2026 a confirmé :
 
-## Téléversement
-
-Endpoint :
-
-```text
-POST /api/files/upload
-```
-
-Limite :
-
-```text
-20 requêtes par minute et par adresse IP
-```
-
-## Téléchargement réel
-
-Endpoint :
-
-```text
-GET /api/download/{token}/file
-```
-
-Limites documentées :
-
-```text
-60 téléchargements par minute et par adresse IP
-30 téléchargements par minute et par token
-```
-
-Les limites de téléchargement sont complémentaires :
-le dépassement d'un quota entraîne un refus HTTP 429.
-
-Une vérification fonctionnelle réalisée le 1er octobre 2026
-a confirmé le comportement suivant avec un même token valide :
-
-| Tentatives | Résultat |
+| Tentatives avec un même token valide | Résultat |
 |---|---|
 | 1 à 30 | HTTP 200 |
 | 31e tentative | HTTP 429 |
 
-La campagne de validation concerne le téléchargement réel
-du fichier, et non une mesure de charge de l'endpoint
-de consultation des métadonnées.
+Les compteurs sont actuellement conservés en mémoire.
+En cas de déploiement multi-instance, un compteur partagé
+serait nécessaire, par exemple avec Redis.
 
-## Réponse en cas de dépassement
-
-Code HTTP :
-
-```text
-429 Too Many Requests
-```
-
-La limitation de connexion et de téléversement est
-documentée avec l'en-tête :
-
-```text
-Retry-After: 60
-```
-
-Le mécanisme de limitation est conservé en mémoire dans
-l'instance Spring Boot actuelle.
-
-Cette architecture convient au MVP mono-instance.
-Une architecture multi-instance nécessiterait un mécanisme
-de comptage partagé, par exemple avec Redis.
-
-Les mesures et limites détaillées sont disponibles
-dans `PERF.md` et `SECURITY.md`.
+Voir `PERF.md` et `SECURITY.md` pour l'analyse détaillée,
+notamment le coût du calcul BCrypt.
 
 ---
 
@@ -1012,192 +913,57 @@ dans `PERF.md` et `SECURITY.md`.
 
 | Code | Signification dans DataShare |
 |---|---|
-| `200 OK` | Requête réussie |
-| `201 Created` | Ressource créée avec succès |
-| `204 No Content` | Suppression réussie sans contenu à retourner |
-| `400 Bad Request` | Requête ou paramètres invalides |
-| `401 Unauthorized` | Authentification absente ou identifiants incorrects |
-| `403 Forbidden` | Mot de passe de téléchargement absent ou incorrect |
-| `404 Not Found` | Ressource, fichier ou token introuvable |
-| `409 Conflict` | Conflit, par exemple une adresse email déjà utilisée |
-| `410 Gone` | Lien de téléchargement expiré |
-| `413 Payload Too Large` | Fichier trop volumineux |
-| `415 Unsupported Media Type` | Type ou contenu de fichier non autorisé |
-| `429 Too Many Requests` | Limite de requêtes dépassée |
-| `500 Internal Server Error` | Erreur interne du serveur |
+| `200` | Requête réussie |
+| `201` | Ressource créée |
+| `204` | Suppression réussie |
+| `400` | Paramètre ou requête invalide |
+| `401` | Authentification absente ou invalide |
+| `403` | Mot de passe de téléchargement absent ou incorrect |
+| `404` | Ressource ou token introuvable |
+| `409` | Conflit, notamment email déjà utilisé |
+| `410` | Lien expiré |
+| `413` | Taille maximale dépassée |
+| `415` | Format ou contenu non autorisé |
+| `429` | Quota dépassé |
+| `500` | Erreur interne |
+
+Les réponses et paramètres propres à chaque endpoint
+sont décrits dans les sections 4 à 10 de ce document.
 
 ---
 
-# 17. Flux principal de partage
+# 17. Parcours principal de partage
 
-```text
-UTILISATEUR CONNECTÉ
-        │
-        ▼
-Frontend Angular
-        │
-        │ JWT
-        ▼
-POST /api/files/upload
-        │
-        ├── file
-        ├── expirationDays
-        └── password
-                │
-                ▼
-Spring Boot
-        │
-        ├── vérification du fichier
-        ├── génération du token
-        ├── calcul de l’expiration
-        ├── hash BCrypt du mot de passe
-        └── enregistrement du fichier
-                │
-                ▼
-PostgreSQL + stockage local
-                │
-                ▼
-downloadToken
-                │
-                ▼
-Lien de partage
-                │
-                ▼
-/download/{token}
-                │
-                ▼
-GET /api/download/{token}
-                │
-                ▼
-Informations du fichier
-                │
-                ▼
-Utilisateur saisit le mot de passe
-                │
-                ▼
-GET /api/download/{token}/file
-                │
-                │ X-Download-Password
-                ▼
-Spring Boot
-        │
-        ├── mot de passe incorrect
-        │          │
-        │          ▼
-        │         403
-        │
-        └── mot de passe correct
-                   │
-                   ▼
-                  200
-                   │
-                   ▼
-            téléchargement
-```
+1. L'utilisateur s'authentifie et reçoit un JWT.
+2. Angular transmet le fichier à `POST /api/files/upload`.
+3. Spring Boot contrôle la taille, le format, la durée
+   d'expiration et le mot de passe facultatif.
+4. Le fichier physique est enregistré sur le stockage local.
+   Ses métadonnées et son token sont conservés dans PostgreSQL.
+5. Le lien public `/download/{token}` est communiqué.
+6. Angular consulte `GET /api/download/{token}` pour
+   récupérer les informations, dont `passwordProtected`.
+7. Le téléchargement utilise
+   `GET /api/download/{token}/file`, avec
+   `X-Download-Password` uniquement si nécessaire.
+
+Le backend vérifie le token, l'expiration, les quotas
+et la protection éventuelle avant de transmettre le fichier.
+
+L'architecture générale est représentée dans `README.md`
+et dans la documentation technique PDF.
 
 ---
 
-# 18. Architecture simplifiée
+# 18. Documents complémentaires
 
-```text
-┌─────────────────────┐
-│     UTILISATEUR     │
-│  Navigateur Web     │
-└──────────┬──────────┘
-           │
-           │ utilise
-           ▼
-┌─────────────────────┐
-│      FRONT-END      │
-│       Angular       │
-│                     │
-│ Pages / Composants  │
-│ Services HTTP       │
-└──────────┬──────────┘
-           │
-           │ API REST
-           │ JSON / HTTP(S)
-           │ JWT
-           ▼
-┌─────────────────────┐
-│      BACK-END       │
-│    Spring Boot      │
-│                     │
-│ Controllers         │
-│ Services            │
-│ Spring Security     │
-│ JPA / Hibernate     │
-│ BCrypt              │
-└──────────┬──────────┘
-           │
-           ├──────────────────────┐
-           │                      │
-           ▼                      ▼
-┌─────────────────────┐  ┌─────────────────────┐
-│     PostgreSQL      │  │   Stockage local    │
-│                     │  │      uploads/       │
-│ Utilisateurs        │  │                     │
-│ Métadonnées fichiers│  │ Fichiers physiques  │
-│ Hash mots de passe  │  │                     │
-└─────────────────────┘  └─────────────────────┘
-```
+| Document | Informations détaillées |
+|---|---|
+| `README.md` | Architecture, installation et utilisation |
+| `SECURITY.md` | Contrôles de sécurité et audits |
+| `TESTING.md` | Tests et critères d'acceptation |
+| `PERF.md` | Métriques, budgets et performances |
+| `MAINTENANCE.md` | Maintenance et exploitation |
 
----
-
-# 19. Points de sécurité principaux
-
-DataShare applique notamment les mesures suivantes :
-
-```text
-Authentification JWT
-Hash des mots de passe utilisateurs
-Hash BCrypt des mots de passe fichiers
-Validation des fichiers
-Contrôle de leur contenu réel
-Expiration des liens
-Tokens de téléchargement
-Contrôle du propriétaire lors de la suppression
-Limitation de débit
-```
-
-Le mot de passe protégeant un fichier n’est pas transmis dans l’URL.
-
-Il est transmis dans :
-
-```text
-X-Download-Password
-```
-
-et comparé au hash enregistré dans la base.
-
----
-
-# 20. État actuel du contrat API
-
-Ce document correspond à l’implémentation actuelle du projet DataShare.
-
-Les principaux éléments documentés sont :
-
-- `POST /api/auth/register` pour l’inscription ;
-- `POST /api/auth/login` pour la connexion ;
-- JWT pour les routes protégées ;
-- `POST /api/files/upload` pour le téléversement ;
-- champs `file`, `expirationDays` et `password` ;
-- réponse d’upload avec `id`, `originalName`, `size`, `downloadToken` et `expiresAt` ;
-- historique paginé avec `GET /api/files` ;
-- suppression avec `DELETE /api/files/{id}` ;
-- contrôle du propriétaire du fichier ;
-- métadonnées publiques avec `GET /api/download/{token}` ;
-- téléchargement avec `GET /api/download/{token}/file` ;
-- protection des fichiers par mot de passe ;
-- hash BCrypt du mot de passe ;
-- header `X-Download-Password` ;
-- `403` pour un mot de passe absent ou incorrect ;
-- `404` lorsqu’une ressource est introuvable ;
-- `410` lorsqu’un lien est expiré ;
-- `429` lorsque la limite de requêtes est dépassée ;
-- validation du type et du contenu des fichiers ;
-- taille maximale de 1 Go ;
-- expiration maximale de 7 jours ;
-- stockage des métadonnées dans PostgreSQL ;
-- stockage physique des fichiers côté serveur.
+Ce contrat correspond à la version DataShare
+validée le 3 octobre 2026.

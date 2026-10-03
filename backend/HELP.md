@@ -92,7 +92,7 @@ source ~/.config/datashare/env
 Dernière validation :
 
 ```text
-49 tests réussis (1er octobre 2026)
+58 tests réussis (3 octobre 2026)
 0 échec
 0 erreur
 BUILD SUCCESS
@@ -114,9 +114,9 @@ target/site/jacoco/index.html
 Derniers résultats :
 
 ```text
-Instructions : 89,78 % (1678 / 1869)
-Branches     : 70,48 % (117 / 166)
-Lignes       : 91,15 % (577 / 633)
+Instructions : 91,64 % (1930 / 2106)
+Branches     : 72,31 % (175 / 242)
+Lignes       : 91,89 % (612 / 666)
 ```
 
 ## SpotBugs
