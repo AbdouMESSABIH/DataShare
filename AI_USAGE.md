@@ -23,6 +23,34 @@ L'IA a notamment été utilisée pour :
 
 Les propositions n'ont pas été considérées comme automatiquement correctes.
 
+### Périmètre complémentaire de l'assistance
+
+Au-delà de la User Story historique consacrée au téléchargement
+par token, l'assistance IA a également été utilisée pendant
+l'évolution générale de DataShare pour :
+
+- proposer et expliquer certaines modifications Java et Angular ;
+- préparer, adapter et analyser des tests automatisés ;
+- aider à diagnostiquer les erreurs de compilation et d'exécution ;
+- proposer des commandes de contrôle Maven, npm, k6 et Lighthouse ;
+- accompagner l'analyse des rapports de sécurité npm et OWASP ;
+- contribuer à la rédaction et à la révision des documents
+  `API.md`, `TESTING.md`, `SECURITY.md`, `MAINTENANCE.md`
+  et `PERF.md` ;
+- suggérer des corrections de cohérence entre le code
+  et la documentation.
+
+Certaines propositions comprenaient du code, des commandes
+ou des paragraphes directement réutilisables. Elles ont été
+examinées et vérifiées à partir des résultats réellement
+observés sur l'environnement local avant leur conservation.
+
+La User Story décrite dans les sections suivantes demeure
+l'exemple historique spécifiquement tracé dans Git.
+Elle ne représente pas la totalité des interventions de l'IA.
+
+
+
 ---
 
 ## 3. Responsabilité humaine
@@ -171,10 +199,10 @@ Cette évolution ne change pas le principe de la revue humaine appliquée au cod
 
 ## 11. Tests actuels
 
-La dernière validation du backend (1er octobre 2026) comprend :
+La dernière validation du backend (3 octobre 2026) comprend :
 
 ```text
-49 tests
+58 tests
 0 échec
 0 erreur
 ```
@@ -182,7 +210,7 @@ La dernière validation du backend (1er octobre 2026) comprend :
 Le frontend comprend :
 
 ```text
-40 tests Angular (1er octobre 2026)
+44 tests Angular (3 octobre 2026)
 ```
 
 Les tests End-to-End comprennent :
@@ -207,9 +235,9 @@ SpotBugs : 0 bug / 0 erreur
 Couverture backend finale :
 
 ```text
-Instructions : 89,78 % (1678 / 1869)
-Branches : 70,48 % (117 / 166)
-Lignes : 91,15 % (577 / 633)
+Instructions : 91,64 % (1930 / 2106)
+Branches : 72,31 % (175 / 242)
+Lignes : 91,89 % (612 / 666)
 ```
 
 ---

@@ -199,10 +199,10 @@ tokens
 expiration
 ```
 
-Dernier résultat backend :
+Dernier résultat backend (3 octobre 2026) :
 
 ```text
-49 tests
+58 tests
 0 échec
 0 erreur
 BUILD SUCCESS
@@ -215,7 +215,7 @@ BUILD SUCCESS
 Validation frontend :
 
 ```text
-40 tests Angular réussis (1er octobre 2026)
+44 tests Angular réussis (3 octobre 2026)
 ESLint : succès
 ```
 
@@ -236,12 +236,12 @@ SpotBugs : 0 erreur
 
 ## 11. Couverture
 
-Derniers résultats JaCoCo (1er octobre 2026) :
+Derniers résultats JaCoCo (3 octobre 2026) :
 
 ```text
-Instructions : 89,78 % (1678 / 1869)
-Branches : 70,48 % (117 / 166)
-Lignes : 91,15 % (577 / 633)
+Instructions : 91,64 % (1930 / 2106)
+Branches : 72,31 % (175 / 242)
+Lignes : 91,89 % (612 / 666)
 ```
 
 La couverture ne prouve pas que le code est sans erreur.
