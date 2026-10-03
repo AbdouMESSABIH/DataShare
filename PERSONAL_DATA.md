@@ -70,7 +70,8 @@ La date d'expiration est enregistrée dans PostgreSQL.
 
 Une fois le fichier expiré, son lien de téléchargement n'est plus utilisable.
 
-L'API retourne :
+Tant que les métadonnées du lien expiré existent encore,
+l'API retourne :
 
 ```text
 410 Gone
@@ -91,6 +92,9 @@ les métadonnées associées
 ```
 
 La suppression intervient lors du passage de la tâche de nettoyage suivant l'expiration.
+
+Après la purge des métadonnées, le token devient introuvable
+et l'API retourne `404 Not Found`.
 
 ---
 
@@ -201,6 +205,9 @@ PDF
 PNG
 JPG
 JPEG
+MP3
+MP4
+ZIP
 ```
 
 Le backend vérifie notamment :

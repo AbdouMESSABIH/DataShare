@@ -138,11 +138,48 @@ PDF
 PNG
 JPG
 JPEG
+MP3
+MP4
+ZIP
 ```
 
 Un fichier dont le contenu ne correspond pas au type attendu est refusé.
 
 Ces contrôles ne remplacent pas un antivirus ou un moteur d'analyse spécialisé.
+
+---
+
+### Justification du périmètre des formats
+
+Le MVP accepte désormais huit extensions :
+
+- TXT ;
+- PDF ;
+- PNG ;
+- JPG et JPEG ;
+- MP3 ;
+- MP4 ;
+- ZIP.
+
+Le backend vérifie la cohérence entre l'extension et
+le type détecté à partir du contenu réel du fichier,
+indépendamment du type MIME déclaré par le navigateur.
+
+Contrôles ajoutés :
+
+- MP3 : reconnaissance ID3v2 ou MPEG Audio ;
+- MP4 : reconnaissance de la boîte initiale `ftyp` ;
+- ZIP : reconnaissance de la signature d'archive.
+
+Les fichiers ZIP sont stockés comme des fichiers ordinaires.
+Ils ne sont ni extraits ni exécutés sur le serveur.
+
+La détection utilise un échantillon initial de 8 192 octets.
+Elle ne remplace pas une validation structurelle exhaustive
+ni un antivirus.
+
+La limite de taille de 1 Go et les autres contrôles
+de sécurité restent applicables.
 
 ---
 
@@ -225,13 +262,16 @@ Durée autorisée :
 1 à 7 jours
 ```
 
-Un lien expiré retourne :
+Un lien expiré dont les métadonnées existent encore dans PostgreSQL retourne :
 
 ```text
 410 Gone
 ```
 
 Une tâche planifiée supprime ensuite les fichiers expirés et leurs métadonnées.
+
+Après cette suppression, le token devient introuvable et l'API retourne
+`404 Not Found`, comme pour un token inconnu.
 
 ---
 
@@ -357,6 +397,129 @@ npm audit fix --force
 
 ne doit pas être appliquée sans analyser les changements de versions et les risques de régression.
 
+
+### Résultats mesurés des audits de dépendances
+
+Les contrôles suivants ont été réalisés les 1er et 2 octobre 2026.
+
+#### Frontend Angular
+
+Commandes exécutées depuis `frontend/` :
+
+```bash
+npm audit --omit=dev
+npm audit
+```
+
+| Périmètre | Faibles | Modérées | Élevées | Critiques | Total |
+|---|---:|---:|---:|---:|---:|
+| Dépendances de production | 0 | 3 | 4 | 0 | 7 |
+| Audit complet | 2 | 16 | 15 | 2 | 35 |
+
+Les sept alertes de production concernent des dépendances
+de l'écosystème Angular 19.
+
+L'audit complet inclut également les outils de développement
+et de compilation. Les résultats ne constituent pas à eux
+seuls une preuve d'exploitation possible dans DataShare.
+
+Au moment du contrôle, npm proposait notamment des corrections
+nécessitant une migration majeure vers Angular 21.
+
+La commande `npm audit fix --force` n'a pas été exécutée,
+afin de ne pas introduire de changement incompatible sans
+migration préparée et tests de non-régression.
+
+**État : alertes frontend connues, traitement restant à planifier.**
+
+#### Backend Java — OWASP Dependency-Check
+
+Outil utilisé : OWASP Dependency-Check 13.0.0.
+
+Le premier scan a été réalisé le 1er octobre 2026
+avec la base NVD synchronisée.
+
+Résultat initial :
+
+| Indicateur | Avant correction |
+|---|---:|
+| Dépendances analysées | 95 (51 uniques) |
+| Dépendances vulnérables détectées | 1 |
+| Vulnérabilités détectées | 11 |
+| Bibliothèque concernée | tomcat-embed-core 11.0.24 |
+| Vulnérabilités supprimées du rapport | 0 |
+
+**Mesure corrective appliquée :**
+
+Spring Boot 4.1.1 gérait initialement Tomcat 11.0.24.
+La propriété Maven suivante a été ajoutée à `backend/pom.xml` :
+
+```xml
+<tomcat.version>11.0.26</tomcat.version>
+```
+
+L'arbre Maven a confirmé que les trois modules
+`tomcat-embed-core`, `tomcat-embed-el` et
+`tomcat-embed-websocket` utilisent désormais 11.0.26.
+
+Après modification :
+
+```bash
+cd backend
+source ~/.config/datashare/env
+./mvnw clean verify
+```
+
+Résultat :
+
+- 58 tests backend réussis ;
+- couverture JaCoCo des branches : 72,31 % (175/242) ;
+- seuil bloquant JaCoCo de 70 % respecté ;
+- SpotBugs : aucune anomalie ;
+- BUILD SUCCESS.
+
+Un second scan OWASP a été effectué le 2 octobre 2026
+à 00 h 12, sur la base NVD précédemment téléchargée :
+
+```bash
+./mvnw org.owasp:dependency-check-maven:13.0.0:check \
+  -DautoUpdate=false \
+  -DfailBuildOnCVSS=11 \
+  -Dformat=HTML
+```
+
+| Indicateur | Après correction |
+|---|---:|
+| Dépendances analysées | 95 (51 uniques) |
+| Dépendances vulnérables détectées | 0 |
+| Vulnérabilités détectées | 0 |
+| Vulnérabilités supprimées du rapport | 0 |
+
+Les 11 alertes initiales ne sont plus détectées après
+la mise à jour vers Tomcat 11.0.26.
+
+**Limites de l'analyse :**
+
+- Le second contrôle utilise le cache NVD initial,
+  sans nouvelle synchronisation (`autoUpdate=false`).
+- L'analyseur Sonatype OSS Index n'a pas été exécuté,
+  faute d'identifiants.
+- `failBuildOnCVSS=11` désactive volontairement le blocage
+  Maven sur les scores CVSS pendant cet audit.
+- L'absence d'alerte détectée ne garantit pas l'absence
+  de toute vulnérabilité.
+
+Rapport HTML local :
+
+```text
+backend/target/dependency-check-report.html
+```
+
+Ce fichier est généré par l'outil et peut être régénéré
+lors des prochains audits. Les dépendances doivent être
+réévaluées régulièrement à partir des avis de sécurité
+et des mises à jour disponibles.
+
 ---
 
 ## 16. Tests de sécurité fonctionnelle
@@ -377,7 +540,7 @@ mot de passe fichier absent
 fallback Content-Type
 ```
 
-Dernier résultat backend :
+Résultat historique backend — 1er octobre 2026 :
 
 ```text
 49 tests réussis (1er octobre 2026)
