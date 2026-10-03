@@ -83,7 +83,10 @@ public class FileService {
                     "pdf", "application/pdf",
                     "png", "image/png",
                     "jpg", "image/jpeg",
-                    "jpeg", "image/jpeg"
+                    "jpeg", "image/jpeg",
+                    "mp3", "audio/mpeg",
+                    "mp4", "video/mp4",
+                    "zip", "application/zip"
             );
 
 
@@ -349,23 +352,6 @@ public class FileService {
     }
 
 
-    /*
-     * Ancienne signature conservée pour que les tests
-     * existants continuent de compiler.
-     */
-    public UploadResponse upload(
-            MultipartFile file,
-            String email,
-            Integer expirationDays
-    ) {
-
-        return upload(
-                file,
-                email,
-                expirationDays,
-                null
-        );
-    }
 
 
     private String getAllowedExtension(
@@ -514,6 +500,19 @@ public class FileService {
         }
 
 
+        if (isZip(sample, bytesRead)) {
+            return "application/zip";
+        }
+
+        if (isMp4(sample, bytesRead)) {
+            return "video/mp4";
+        }
+
+        if (isMp3(sample, bytesRead)) {
+            return "audio/mpeg";
+        }
+
+
         if (
                 isUtf8Text(
                         sample,
@@ -609,6 +608,87 @@ public class FileService {
     }
 
 
+    // Signature ZIP standard ou archive ZIP vide.
+    // Le serveur ne décompresse jamais les archives.
+    private boolean isZip(byte[] data, int length) {
+        if (length < 4 || data[0] != 'P' || data[1] != 'K') {
+            return false;
+        }
+
+        boolean standardArchive =
+                length >= 30 && data[2] == 3 && data[3] == 4;
+
+        boolean emptyArchive =
+                length >= 22 && data[2] == 5 && data[3] == 6;
+
+        return standardArchive || emptyArchive;
+    }
+
+
+    // Signature de la boite File Type (ftyp) du conteneur MP4.
+    private boolean isMp4(byte[] data, int length) {
+        if (length < 16) {
+            return false;
+        }
+
+        int boxSize = ByteBuffer.wrap(data, 0, 4).getInt();
+
+        return boxSize >= 16
+                && boxSize <= length
+                && data[4] == 'f'
+                && data[5] == 't'
+                && data[6] == 'y'
+                && data[7] == 'p';
+    }
+
+
+    // MP3 : en-tete ID3v2 ou en-tete MPEG Audio valide.
+    private boolean isMp3(byte[] data, int length) {
+        if (length >= 10
+                && data[0] == 'I'
+                && data[1] == 'D'
+                && data[2] == '3') {
+
+            int version = Byte.toUnsignedInt(data[3]);
+
+            if (version >= 2 && version <= 4) {
+                boolean validSize = true;
+
+                for (int i = 6; i < 10; i++) {
+                    if ((data[i] & 0x80) != 0) {
+                        validSize = false;
+                    }
+                }
+
+                if (validSize) {
+                    return true;
+                }
+            }
+        }
+
+        if (length < 4) {
+            return false;
+        }
+
+        int first = Byte.toUnsignedInt(data[0]);
+        int second = Byte.toUnsignedInt(data[1]);
+        int third = Byte.toUnsignedInt(data[2]);
+
+        int version = (second >> 3) & 3;
+        int layer = (second >> 1) & 3;
+        int bitrate = (third >> 4) & 15;
+        int frequency = (third >> 2) & 3;
+
+        return first == 0xFF
+                && (second & 0xE0) == 0xE0
+                && version != 1
+                && layer != 0
+                && bitrate > 0
+                && bitrate < 15
+                && frequency != 3;
+    }
+
+
     private boolean isUtf8Text(
             byte[] data,
             int length
@@ -686,7 +766,7 @@ public class FileService {
 
         throw new ResponseStatusException(
                 HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-                "Type de fichier non autorisé. Formats acceptés : txt, pdf, png, jpg, jpeg"
+                "Type de fichier non autorisé. Formats acceptés : txt, pdf, png, jpg, jpeg, mp3, mp4, zip"
         );
     }
 
