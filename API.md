@@ -2,42 +2,42 @@
 
 ## 1. Objectif
 
-Ce document décrit le contrat d’interface entre le front-end Angular et le back-end Spring Boot de l’application DataShare.
+Ce document décrit le contrat principal entre :
 
-Il présente :
+- le front-end Angular ;
+- le back-end Spring Boot.
 
-- les endpoints REST ;
-- les méthodes HTTP ;
-- les données envoyées ;
-- les réponses retournées ;
-- l’authentification JWT ;
-- les principaux codes HTTP ;
-- la protection des fichiers par mot de passe ;
-- la pagination ;
-- l’expiration des fichiers ;
-- les règles principales de validation.
-
-Le préfixe principal de l’API est :
+Préfixe de l’API :
 
 ```text
 /api
 ```
 
+L’API permet :
+
+- l’inscription ;
+- la connexion ;
+- le téléversement ;
+- la consultation de l’historique ;
+- la suppression ;
+- la consultation d’un partage ;
+- le téléchargement d’un fichier.
+
 ---
 
-## 2. Authentification
+# 2. Authentification
 
-DataShare utilise une authentification par JWT.
+DataShare utilise une authentification JWT.
 
-Après une connexion réussie, le back-end retourne un token JWT.
+Après une connexion réussie, le backend retourne un token JWT.
 
-Pour accéder aux routes protégées, Angular envoie :
+Pour les routes protégées, Angular envoie :
 
 ```text
 Authorization: Bearer <token-jwt>
 ```
 
-Les routes publiques sont :
+## Routes publiques
 
 ```text
 POST /api/auth/register
@@ -47,7 +47,7 @@ GET /api/download/{token}
 GET /api/download/{token}/file
 ```
 
-Les routes suivantes nécessitent une authentification JWT :
+## Routes protégées
 
 ```text
 POST   /api/files/upload
@@ -57,21 +57,21 @@ DELETE /api/files/{id}
 
 ---
 
-## 3. Résumé des endpoints
+# 3. Résumé des endpoints
 
 | Méthode | Endpoint | Fonction | Authentification |
 |---|---|---|---|
-| POST | `/api/auth/register` | Créer un compte utilisateur | Non |
+| POST | `/api/auth/register` | Créer un compte | Non |
 | POST | `/api/auth/login` | Se connecter | Non |
 | POST | `/api/files/upload` | Téléverser un fichier | JWT |
-| GET | `/api/files` | Consulter l’historique de ses fichiers | JWT |
+| GET | `/api/files` | Consulter ses fichiers | JWT |
 | DELETE | `/api/files/{id}` | Supprimer un fichier | JWT |
-| GET | `/api/download/{token}` | Consulter les informations d’un fichier partagé | Non |
-| GET | `/api/download/{token}/file` | Télécharger un fichier partagé | Non |
+| GET | `/api/download/{token}` | Consulter un partage | Non |
+| GET | `/api/download/{token}/file` | Télécharger le fichier | Non |
 
 ---
 
-# 4. Création d’un compte
+# 4. Inscription
 
 ## Endpoint
 
@@ -79,13 +79,7 @@ DELETE /api/files/{id}
 POST /api/auth/register
 ```
 
-## Content-Type
-
-```text
-application/json
-```
-
-## Corps de la requête
+## Requête
 
 ```json
 {
@@ -94,24 +88,15 @@ application/json
 }
 ```
 
-## Contraintes
+Contraintes principales :
 
-### Email
+- email obligatoire ;
+- format email valide ;
+- email unique ;
+- mot de passe obligatoire ;
+- minimum 8 caractères.
 
-L’adresse email :
-
-- est obligatoire ;
-- doit respecter un format email valide ;
-- doit être unique.
-
-### Mot de passe
-
-Le mot de passe :
-
-- est obligatoire ;
-- doit contenir au minimum 8 caractères.
-
-Le mot de passe utilisateur est hashé avant son stockage en base de données.
+Le mot de passe utilisateur est hashé avant son stockage.
 
 ## Réponse réussie
 
@@ -119,25 +104,14 @@ Le mot de passe utilisateur est hashé avant son stockage en base de données.
 201 Created
 ```
 
-La réponse ne contient pas de corps.
-
 ## Erreurs principales
 
-### 400 Bad Request
-
-La requête contient des données invalides.
-
-Exemples :
-
 ```text
-email invalide
-mot de passe trop court
-champ obligatoire absent
+400 Bad Request
+409 Conflict
 ```
 
-### 409 Conflict
-
-L’adresse email est déjà utilisée.
+`409 Conflict` est notamment utilisé lorsqu’un email existe déjà.
 
 ---
 
@@ -149,13 +123,7 @@ L’adresse email est déjà utilisée.
 POST /api/auth/login
 ```
 
-## Content-Type
-
-```text
-application/json
-```
-
-## Corps de la requête
+## Requête
 
 ```json
 {
@@ -178,21 +146,13 @@ Exemple :
 }
 ```
 
-Le token JWT est ensuite utilisé par Angular pour accéder aux routes protégées.
-
 ## Erreurs principales
 
-### 400 Bad Request
-
-La requête est invalide.
-
-### 401 Unauthorized
-
-Les identifiants sont incorrects.
-
-### 429 Too Many Requests
-
-Trop de requêtes ont été effectuées dans la fenêtre autorisée lorsque le mécanisme de limitation de débit est déclenché.
+```text
+400 Bad Request
+401 Unauthorized
+429 Too Many Requests
+```
 
 ---
 
@@ -204,23 +164,19 @@ Trop de requêtes ont été effectuées dans la fenêtre autorisée lorsque le m
 POST /api/files/upload
 ```
 
-## Authentification
-
 JWT obligatoire :
 
 ```text
 Authorization: Bearer <token-jwt>
 ```
 
-## Content-Type
+Type de contenu :
 
 ```text
 multipart/form-data
 ```
 
-## Champs envoyés
-
-La requête contient :
+## Champs
 
 ```text
 file
@@ -238,13 +194,7 @@ password = Secret123!
 
 ---
 
-## Champ `file`
-
-Ce champ contient le fichier à téléverser.
-
-Il est obligatoire.
-
-Les formats actuellement acceptés sont :
+## Formats acceptés
 
 ```text
 TXT
@@ -257,27 +207,19 @@ MP4
 ZIP
 ```
 
-La taille maximale autorisée est :
+Taille maximale :
 
 ```text
 1 Go
 ```
 
-Le back-end contrôle également le contenu réel du fichier afin de vérifier sa cohérence avec le format annoncé.
+Le backend contrôle également le contenu réel du fichier afin de vérifier sa cohérence avec le format annoncé.
 
-Par exemple :
-
-```text
-document.pdf
-```
-
-doit réellement correspondre à un fichier PDF valide.
+Un simple changement d’extension ne suffit donc pas à rendre un fichier valide.
 
 ---
 
-## Champ `expirationDays`
-
-Ce champ définit la durée de validité du lien de téléchargement.
+## Expiration
 
 Valeurs autorisées :
 
@@ -285,7 +227,7 @@ Valeurs autorisées :
 1 à 7 jours
 ```
 
-Si aucune valeur n’est fournie, la durée utilisée est :
+Valeur par défaut :
 
 ```text
 7 jours
@@ -293,21 +235,19 @@ Si aucune valeur n’est fournie, la durée utilisée est :
 
 ---
 
-## Champ `password`
+## Mot de passe du fichier
 
-Ce champ contient le mot de passe protégeant le téléchargement.
+Le mot de passe de partage est facultatif.
 
-Le paramètre est optionnel au niveau de l’API.
+Lorsqu’il est renseigné :
 
-Lorsqu'un mot de passe est renseigné, il doit contenir
-au minimum six caractères. Un champ absent ou vide
-correspond à un partage sans protection par mot de passe.
+```text
+minimum 6 caractères
+```
 
-Dans l'interface Angular actuelle, le mot de passe est également optionnel. Un fichier peut être téléversé avec ou sans protection par mot de passe.
+Le mot de passe n’est jamais stocké en clair.
 
-Le mot de passe du fichier n’est jamais stocké en clair.
-
-Il est hashé avec BCrypt avant d’être enregistré dans PostgreSQL.
+Il est hashé avec BCrypt avant d’être enregistré.
 
 ---
 
@@ -329,63 +269,20 @@ Exemple :
 }
 ```
 
-### `id`
-
-Identifiant du fichier en base de données.
-
-### `originalName`
-
-Nom original du fichier envoyé par l’utilisateur.
-
-### `size`
-
-Taille du fichier en octets.
-
-### `downloadToken`
-
-Token unique utilisé pour accéder au partage.
-
-### `expiresAt`
-
-Date et heure d’expiration du fichier.
-
----
-
 ## Erreurs principales
 
-### 400 Bad Request
-
-Exemples :
-
 ```text
-fichier vide
-durée d’expiration invalide
-paramètres invalides
+400 Bad Request
+401 Unauthorized
+413 Payload Too Large
+415 Unsupported Media Type
+429 Too Many Requests
+500 Internal Server Error
 ```
-
-### 401 Unauthorized
-
-L’utilisateur n’est pas authentifié.
-
-### 413 Payload Too Large
-
-Le fichier dépasse la taille maximale autorisée.
-
-### 415 Unsupported Media Type
-
-Le format du fichier n’est pas accepté ou son contenu réel ne correspond pas au format attendu.
-
-### 429 Too Many Requests
-
-Trop de requêtes ont été effectuées lorsque le mécanisme de limitation de débit est déclenché.
-
-### 500 Internal Server Error
-
-Une erreur est survenue pendant l’enregistrement du fichier.
 
 ---
 
-# 7. Consultation de l’historique
+# 7. Historique des fichiers
 
 ## Endpoint
 
@@ -393,59 +290,22 @@ Une erreur est survenue pendant l’enregistrement du fichier.
 GET /api/files
 ```
 
-Exemple avec pagination :
+Exemple :
 
 ```text
 GET /api/files?page=0&size=10
 ```
 
-## Authentification
+JWT obligatoire.
 
-JWT obligatoire :
+## Pagination
 
-```text
-Authorization: Bearer <token-jwt>
-```
-
----
-
-## Paramètre `page`
-
-Numéro de la page demandée.
-
-La première page correspond à :
-
-```text
-0
-```
-
-Valeur par défaut :
-
-```text
-0
-```
-
-La valeur ne peut pas être négative.
-
----
-
-## Paramètre `size`
-
-Nombre de fichiers retournés par page.
-
-Valeur par défaut :
-
-```text
-10
-```
-
-Valeurs autorisées :
-
-```text
-1 à 50
-```
-
----
+| Paramètre | Valeur |
+|---|---|
+| `page` | entier >= 0 |
+| `size` | entre 1 et 50 |
+| page par défaut | 0 |
+| taille par défaut | 10 |
 
 ## Réponse réussie
 
@@ -476,25 +336,14 @@ Exemple :
 }
 ```
 
-L’utilisateur reçoit uniquement les fichiers associés à son propre compte.
-
----
+L’utilisateur reçoit uniquement ses propres fichiers.
 
 ## Erreurs principales
 
-### 400 Bad Request
-
-Exemples :
-
 ```text
-page négative
-size inférieur à 1
-size supérieur à 50
+400 Bad Request
+401 Unauthorized
 ```
-
-### 401 Unauthorized
-
-L’utilisateur n’est pas authentifié.
 
 ---
 
@@ -506,23 +355,9 @@ L’utilisateur n’est pas authentifié.
 DELETE /api/files/{id}
 ```
 
-Exemple :
+JWT obligatoire.
 
-```text
-DELETE /api/files/12
-```
-
-## Authentification
-
-JWT obligatoire :
-
-```text
-Authorization: Bearer <token-jwt>
-```
-
-## Fonctionnement
-
-Le back-end recherche le fichier à partir de :
+Le backend recherche le fichier en fonction :
 
 ```text
 id du fichier
@@ -532,14 +367,12 @@ utilisateur connecté
 
 Un utilisateur ne peut donc supprimer que ses propres fichiers.
 
-Lors de la suppression :
+La suppression concerne :
 
 ```text
 fichier physique
-        +
++
 métadonnées PostgreSQL
-        ↓
-    supprimés
 ```
 
 ## Réponse réussie
@@ -550,37 +383,15 @@ métadonnées PostgreSQL
 
 ## Erreurs principales
 
-### 401 Unauthorized
-
-L’utilisateur n’est pas authentifié.
-
-### 404 Not Found
-
-Le fichier :
-
 ```text
-n’existe pas
-```
-
-ou :
-
-```text
-n’appartient pas à l’utilisateur connecté
-```
-
-Dans l’implémentation actuelle, ces deux situations sont traitées comme une ressource introuvable et retournent :
-
-```text
+401 Unauthorized
 404 Not Found
+500 Internal Server Error
 ```
-
-### 500 Internal Server Error
-
-Une erreur est survenue pendant la suppression physique du fichier.
 
 ---
 
-# 9. Consultation des informations d’un fichier partagé
+# 9. Consultation d’un partage
 
 ## Endpoint
 
@@ -588,25 +399,11 @@ Une erreur est survenue pendant la suppression physique du fichier.
 GET /api/download/{token}
 ```
 
-Exemple :
-
-```text
-GET /api/download/395dbacc-401c-44bd-94c3-6f04038cf8ce
-```
-
-## Authentification
-
-Aucun JWT n’est nécessaire.
-
 Cette route est publique.
 
-## Mot de passe
+Elle permet de récupérer les informations du partage avant le téléchargement.
 
-Le mot de passe du fichier n’est pas nécessaire pour consulter les métadonnées du partage.
-
-Le mot de passe est vérifié uniquement lors du téléchargement réel du fichier.
-
----
+Le mot de passe n’est pas nécessaire pour consulter ces métadonnées.
 
 ## Réponse réussie
 
@@ -626,37 +423,24 @@ Exemple :
 }
 ```
 
-### `originalName`
-
-Nom original du fichier.
-
-### `size`
-
-Taille du fichier en octets.
-
-### `contentType`
-
-Type MIME du fichier.
-
-### `expiresAt`
-
-Date et heure d’expiration du partage.
-
----
-
 ## Erreurs principales
 
-### 404 Not Found
+```text
+404 Not Found
+410 Gone
+```
 
-Le token est inconnu, le fichier physique n’existe plus, ou les métadonnées du partage ont déjà été supprimées par la purge.
+`410 Gone` indique que le lien a expiré mais que ses métadonnées existent encore.
 
-### 410 Gone
+Après suppression des métadonnées par la purge, le token retourne :
 
-Le lien a expiré, mais ses métadonnées sont encore présentes en base.
+```text
+404 Not Found
+```
 
 ---
 
-# 10. Téléchargement du fichier
+# 10. Téléchargement
 
 ## Endpoint
 
@@ -664,71 +448,43 @@ Le lien a expiré, mais ses métadonnées sont encore présentes en base.
 GET /api/download/{token}/file
 ```
 
-Exemple :
-
-```text
-GET /api/download/395dbacc-401c-44bd-94c3-6f04038cf8ce/file
-```
-
-## Authentification
-
-Aucun JWT n’est nécessaire.
-
 Cette route est publique.
 
-Le téléchargement repose sur un token valide.
+Le téléchargement nécessite :
 
-Si le fichier est protégé, un mot de passe correct
-est également nécessaire. Aucun mot de passe n'est
-requis pour un fichier partagé sans protection.
+- un token valide ;
+- un lien non expiré ;
+- un mot de passe correct si le fichier est protégé.
 
 ---
 
 ## Transmission du mot de passe
 
-Le mot de passe est transmis dans l’en-tête HTTP :
+Pour un fichier protégé :
 
 ```text
 X-Download-Password: Secret123!
 ```
 
-Le mot de passe n’est donc pas placé dans l’URL.
+Le mot de passe n’est pas placé dans l’URL.
 
-Le back-end compare le mot de passe reçu avec le hash BCrypt enregistré dans PostgreSQL.
+Le backend le compare au hash BCrypt enregistré.
 
----
-
-## Mot de passe correct
-
-Le téléchargement est autorisé :
+### Mot de passe correct
 
 ```text
 200 OK
 ```
 
----
-
-## Mot de passe incorrect
-
-Le serveur retourne :
+### Mot de passe absent ou incorrect
 
 ```text
 403 Forbidden
 ```
 
----
+### Fichier non protégé
 
-## Mot de passe absent
-
-Pour un fichier protégé, le serveur retourne :
-
-```text
-403 Forbidden
-```
-
-Tout fichier partagé sans mot de passe, qu'il provienne
-d'un ancien ou d'un nouvel upload, reste téléchargeable
-sans l'en-tête `X-Download-Password`.
+Aucun en-tête `X-Download-Password` n’est nécessaire.
 
 ---
 
@@ -738,9 +494,7 @@ sans l'en-tête `X-Download-Password`.
 200 OK
 ```
 
-Le corps de la réponse contient le fichier physique.
-
-Le serveur retourne notamment les en-têtes :
+Le serveur retourne notamment :
 
 ```text
 Content-Type
@@ -754,216 +508,188 @@ Exemple :
 Content-Disposition: attachment; filename="document.pdf"
 ```
 
-Cela permet au navigateur de télécharger le fichier avec son nom original.
-
----
-
 ## Erreurs principales
 
-### 403 Forbidden
-
-Le fichier est protégé et le mot de passe est absent ou incorrect.
-
-### 404 Not Found
-
-Le token est inconnu, le fichier physique n’existe plus, ou les métadonnées du partage ont déjà été supprimées par la purge.
-
-### 410 Gone
-
-Le lien a expiré, mais ses métadonnées sont encore présentes en base.
-
-### 429 Too Many Requests
-
-Le quota de téléchargement par IP ou par token
-est dépassé. Voir la section 15.
+```text
+403 Forbidden
+404 Not Found
+410 Gone
+429 Too Many Requests
+```
 
 ---
 
-<!-- Synthèse API : 3 octobre 2026 -->
-
-# 11. Protection des fichiers par mot de passe
-
-Le mot de passe de partage est facultatif lors du téléversement.
-
-Lorsqu'il est renseigné, il doit contenir au moins six
-caractères utiles. Le backend conserve uniquement son hash
-BCrypt dans PostgreSQL, jamais sa valeur en clair.
-
-Le téléchargement d'un fichier protégé nécessite l'en-tête
-HTTP `X-Download-Password`.
-
-Le backend compare le mot de passe transmis au hash enregistré :
-
-- mot de passe correct : téléchargement autorisé ;
-- mot de passe incorrect ou absent : HTTP 403 ;
-- fichier non protégé : aucun mot de passe nécessaire.
-
-Les réponses de consultation et d'historique exposent
-l'indicateur booléen `passwordProtected`. Il permet notamment
-à Angular d'afficher le cadenas et le champ de mot de passe
-uniquement lorsque cela est nécessaire.
-
----
-
-# 12. Expiration des fichiers
-
-Chaque fichier possède une date de création et une date
-d'expiration.
-
-La durée est comprise entre 1 et 7 jours, avec 7 jours
-par défaut si aucune durée n'est transmise.
-
-Un lien expiré retourne `410 Gone` tant que ses métadonnées
-existent encore dans PostgreSQL. Après leur suppression par
-la purge automatique, le token n'est plus retrouvé et l'API
-retourne `404 Not Found`, comme pour un token inconnu.
-
-Le backend dispose également d'une purge planifiée
-des fichiers expirés.
-
----
-
-# 13. Pagination
-
-L'historique utilise une pagination côté serveur.
-
-Exemple : `GET /api/files?page=0&size=10`
-
-| Paramètre | Contrainte |
-|---|---|
-| `page` | Entier supérieur ou égal à 0 |
-| `size` | Entre 1 et 50 |
-
-La réponse contient notamment `content`, `page`, `size`,
-`totalElements` et `totalPages`.
-
-L'accès à l'historique nécessite un JWT valide.
-
----
-
-# 14. Validation des fichiers
-
-La taille maximale autorisée est de 1 Go.
+# 11. Validation des fichiers
 
 | Extension | Type MIME attendu |
 |---|---|
 | TXT | `text/plain` |
 | PDF | `application/pdf` |
 | PNG | `image/png` |
-| JPG, JPEG | `image/jpeg` |
+| JPG / JPEG | `image/jpeg` |
 | MP3 | `audio/mpeg` |
 | MP4 | `video/mp4` |
 | ZIP | `application/zip` |
 
-Le backend contrôle l'extension et détecte le type
-à partir du contenu, indépendamment du MIME déclaré
-par le navigateur.
+Le backend contrôle l’extension et analyse le contenu du fichier.
 
-Les contrôles portent notamment sur les signatures
-PDF, PNG, JPEG, MP3, MP4 et ZIP, ainsi que sur
-la validité du contenu texte UTF-8.
+Les contrôles portent notamment sur :
 
-Une incohérence entraîne un refus HTTP 415.
+```text
+PDF
+PNG
+JPEG
+MP3
+MP4
+ZIP
+TXT UTF-8
+```
 
-La détection par signature ne constitue pas une analyse
-antivirus ni une validation exhaustive des fichiers.
+Une incohérence entre le fichier et son format entraîne :
 
-Voir `SECURITY.md` pour les limites de ces contrôles.
+```text
+415 Unsupported Media Type
+```
+
+Ces contrôles ne constituent pas une analyse antivirus complète.
+
+Voir `SECURITY.md` pour les détails de sécurité.
 
 ---
 
-# 15. Limitation de débit
+# 12. Expiration et purge
 
-Le backend applique des quotas pour limiter les abus
-sur les endpoints sensibles.
+Chaque partage possède une date d’expiration.
+
+Durée :
+
+```text
+1 à 7 jours
+```
+
+Valeur par défaut :
+
+```text
+7 jours
+```
+
+Lorsqu’un partage est expiré mais encore présent en base :
+
+```text
+410 Gone
+```
+
+Après purge de ses métadonnées :
+
+```text
+404 Not Found
+```
+
+Une purge planifiée supprime les fichiers expirés.
+
+---
+
+# 13. Limitation de débit
+
+Le backend applique plusieurs quotas.
 
 | Endpoint | Limitation |
-|---|---|
+|---|---:|
 | `POST /api/auth/login` | 10 requêtes/minute/IP |
 | `POST /api/files/upload` | 20 requêtes/minute/IP |
 | `GET /api/download/{token}/file` | 60 requêtes/minute/IP |
 | `GET /api/download/{token}/file` | 30 requêtes/minute/token |
 
-Les deux limites du téléchargement sont complémentaires.
+En cas de dépassement :
 
-En cas de dépassement, le serveur retourne
-`429 Too Many Requests`.
-
-Pour la connexion et le téléversement, la réponse
-de limitation comporte `Retry-After: 60`.
-
-Une vérification fonctionnelle du téléchargement
-réalisée le 1er octobre 2026 a confirmé :
-
-| Tentatives avec un même token valide | Résultat |
-|---|---|
-| 1 à 30 | HTTP 200 |
-| 31e tentative | HTTP 429 |
+```text
+429 Too Many Requests
+```
 
 Les compteurs sont actuellement conservés en mémoire.
-En cas de déploiement multi-instance, un compteur partagé
-serait nécessaire, par exemple avec Redis.
 
-Voir `PERF.md` et `SECURITY.md` pour l'analyse détaillée,
-notamment le coût du calcul BCrypt.
+Dans un déploiement multi-instance, un stockage partagé des compteurs serait nécessaire.
+
+Les tests de performance et l’impact de BCrypt sont détaillés dans `PERF.md`.
 
 ---
 
-# 16. Codes HTTP principaux
+# 14. Codes HTTP principaux
 
-| Code | Signification dans DataShare |
+| Code | Signification |
 |---|---|
 | `200` | Requête réussie |
 | `201` | Ressource créée |
 | `204` | Suppression réussie |
-| `400` | Paramètre ou requête invalide |
+| `400` | Requête ou paramètre invalide |
 | `401` | Authentification absente ou invalide |
-| `403` | Mot de passe de téléchargement absent ou incorrect |
+| `403` | Accès refusé ou mot de passe fichier incorrect |
 | `404` | Ressource ou token introuvable |
 | `409` | Conflit, notamment email déjà utilisé |
 | `410` | Lien expiré |
-| `413` | Taille maximale dépassée |
+| `413` | Fichier trop volumineux |
 | `415` | Format ou contenu non autorisé |
-| `429` | Quota dépassé |
+| `429` | Limitation de débit dépassée |
 | `500` | Erreur interne |
 
-Les réponses et paramètres propres à chaque endpoint
-sont décrits dans les sections 4 à 10 de ce document.
+---
+
+# 15. Parcours principal
+
+```text
+Utilisateur
+    │
+    ▼
+Connexion
+    │
+    ▼
+JWT
+    │
+    ▼
+Téléversement
+    │
+    ▼
+Contrôle du fichier
+    │
+    ▼
+Stockage physique + PostgreSQL
+    │
+    ▼
+Token de partage
+    │
+    ▼
+/download/{token}
+    │
+    ▼
+Téléchargement
+```
+
+Le parcours détaillé est :
+
+1. l’utilisateur s’authentifie ;
+2. le backend retourne un JWT ;
+3. Angular envoie le fichier à `/api/files/upload` ;
+4. le backend contrôle le fichier, l’expiration et le mot de passe ;
+5. le fichier est stocké ;
+6. ses métadonnées sont enregistrées dans PostgreSQL ;
+7. un token de téléchargement est généré ;
+8. le partage est consultable via `/api/download/{token}` ;
+9. le téléchargement utilise `/api/download/{token}/file` ;
+10. `X-Download-Password` est envoyé uniquement si le fichier est protégé.
 
 ---
 
-# 17. Parcours principal de partage
+# 16. Documents complémentaires
 
-1. L'utilisateur s'authentifie et reçoit un JWT.
-2. Angular transmet le fichier à `POST /api/files/upload`.
-3. Spring Boot contrôle la taille, le format, la durée
-   d'expiration et le mot de passe facultatif.
-4. Le fichier physique est enregistré sur le stockage local.
-   Ses métadonnées et son token sont conservés dans PostgreSQL.
-5. Le lien public `/download/{token}` est communiqué.
-6. Angular consulte `GET /api/download/{token}` pour
-   récupérer les informations, dont `passwordProtected`.
-7. Le téléchargement utilise
-   `GET /api/download/{token}/file`, avec
-   `X-Download-Password` uniquement si nécessaire.
-
-Le backend vérifie le token, l'expiration, les quotas
-et la protection éventuelle avant de transmettre le fichier.
-
-L'architecture générale est représentée dans `README.md`
-et dans la documentation technique PDF.
-
----
-
-# 18. Documents complémentaires
-
-| Document | Informations détaillées |
+| Document | Contenu |
 |---|---|
-| `README.md` | Architecture, installation et utilisation |
-| `SECURITY.md` | Contrôles de sécurité et audits |
-| `TESTING.md` | Tests et critères d'acceptation |
-| `PERF.md` | Métriques, budgets et performances |
-| `MAINTENANCE.md` | Maintenance et exploitation |
+| `README.md` | Installation et architecture |
+| `SECURITY.md` | Sécurité et contrôles |
+| `TESTING.md` | Tests et couverture |
+| `PERF.md` | Performance et charge |
+| `FIGMA_CONFORMITE.md` | Conformité de l’interface |
+| `MAINTENANCE.md` | Maintenance |
 
-Ce contrat correspond à la version DataShare
-validée le 3 octobre 2026.
+Ce document décrit le contrat API utile à la compréhension et à l’utilisation de DataShare.
+
+Les détails de tests, de performance et de sécurité sont volontairement placés dans leurs documents respectifs afin d’éviter les répétitions.

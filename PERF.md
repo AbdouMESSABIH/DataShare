@@ -7,11 +7,11 @@ L'objectif de cette analyse est d'évaluer les performances de l'application Dat
 - les performances du back-end Spring Boot sous charge avec k6 ;
 - les performances du front-end Angular dans le navigateur avec Lighthouse.
 
-Ce rapport présente les tests k6 et les nouvelles mesures Lighthouse du 1er octobre 2026 sur l'interface Angular actualisée. Les campagnes précédentes sont conservées à titre historique.
+Ce rapport conserve uniquement les dernières campagnes de mesure disponibles.
 
-Les tests ont été effectués dans un environnement local de développement.
+Les tests ont été réalisés dans un environnement local de développement.
 
-Ils permettent de vérifier le comportement de l'application et de détecter d'éventuels problèmes de performance, mais ils ne constituent pas un benchmark représentatif d'un environnement de production.
+Ils permettent de vérifier le comportement de l'application et d'identifier d'éventuels problèmes de performance, mais ils ne constituent pas un benchmark représentatif d'un environnement de production.
 
 ---
 
@@ -19,7 +19,7 @@ Ils permettent de vérifier le comportement de l'application et de détecter d'�
 
 Les tests ont été réalisés localement sur la machine de développement.
 
-Les deux outils suivent des chemins différents :
+Les outils k6 et Lighthouse suivent des parcours différents :
 
 ```text
 Navigateur                         k6
@@ -44,7 +44,7 @@ Le navigateur charge l'application Angular, qui communique ensuite avec le back-
 
 k6 ne passe pas par Angular : il envoie directement ses requêtes HTTP au back-end Spring Boot.
 
-Le back-end fonctionne actuellement en mono-instance.
+Le back-end fonctionne en mono-instance.
 
 PostgreSQL et le stockage des fichiers sont locaux.
 
@@ -54,172 +54,237 @@ PostgreSQL et le stockage des fichiers sont locaux.
 
 ## 3.1 Objectif
 
-Mesurer les performances du téléchargement protégé par mot
-de passe avec k6.
+L'objectif du test est d'évaluer le comportement du back-end Spring Boot sous une charge soutenue de téléchargements.
+
+Deux campagnes comparables ont été exécutées :
+
+- téléchargement de fichiers sans mot de passe ;
+- téléchargement de fichiers protégés par mot de passe avec vérification BCrypt.
+
+Cette comparaison permet d'estimer le surcoût associé à la vérification BCrypt lors d'un téléchargement protégé.
+
+La campagne finale a été réalisée le 6 octobre 2026 avec k6.
+
+---
 
 ## 3.2 Configuration du scénario
 
-Date : 1er octobre 2026.
+Le scénario utilise plusieurs liens de téléchargement afin de ne pas concentrer toutes les requêtes sur un seul token.
 
-- 10 utilisateurs virtuels (VUs).
-- 20 itérations partagées au total.
-- Durée maximale configurée : 60 secondes.
-- Endpoint : GET /api/download/{token}/file.
-- Mot de passe transmis avec X-Download-Password.
-- Vérification BCrypt côté serveur (coût 12).
+Configuration commune aux deux campagnes :
 
-Le scénario tient compte des nouvelles protections :
-60 téléchargements/minute/IP et 30/minute/token.
+- durée : 60 secondes ;
+- cadence : 1 requête toutes les 2 secondes ;
+- 4 liens de téléchargement différents ;
+- 31 téléchargements par campagne ;
+- endpoint : `GET /api/download/{token}/file` ;
+- seuil d'erreur HTTP : inférieur à 1 % ;
+- seuil de latence : p95 inférieur à 1 000 ms.
 
-## 3.3 Seuils et vérifications
+Le scénario k6 utilise l'exécuteur `constant-arrival-rate`.
 
-Seuils de performance configurés dans k6 :
+Les requêtes sont réparties entre les quatre tokens pendant toute la durée du test.
 
-- http_req_failed inférieur à 1 %.
-- http_req_duration p95 inférieur à 1 000 ms.
+Le scénario a été dimensionné afin de rester compatible avec les mécanismes de limitation de téléchargement de l'application.
 
-Vérifications fonctionnelles exécutées à chaque téléchargement :
+---
+
+## 3.3 Campagne sans vérification BCrypt
+
+La première campagne utilise quatre fichiers sans mot de passe.
+
+Dans ce cas, le back-end récupère le fichier sans exécuter de vérification `PasswordEncoder.matches()`.
+
+Résultats :
+
+| Indicateur | Résultat |
+|---|---:|
+| Durée | 60 s |
+| Liens utilisés | 4 |
+| Requêtes HTTP | 31 |
+| Vérifications réussies | 62/62 |
+| Erreurs HTTP | 0 % |
+| Temps moyen | 5,50 ms |
+| Temps médian | 5,51 ms |
+| p90 | 6,33 ms |
+| p95 | 6,56 ms |
+| Temps minimal | 3,94 ms |
+| Temps maximal | 6,85 ms |
+
+Les deux vérifications fonctionnelles ont réussi pour chaque requête :
 
 - statut HTTP 200 ;
 - fichier téléchargé non vide.
 
-## 3.4 Résultats réels
+Les seuils k6 sont respectés :
+
+- taux d'erreur : 0 % ;
+- p95 : 6,56 ms, inférieur au seuil de 1 000 ms.
+
+---
+
+## 3.4 Campagne avec vérification BCrypt
+
+La seconde campagne utilise quatre fichiers protégés par le même mot de passe.
+
+Le back-end vérifie le mot de passe à chaque téléchargement avec un `BCryptPasswordEncoder` configuré avec un coût de 12.
+
+La vérification est réalisée avec `PasswordEncoder.matches()`.
+
+Résultats :
 
 | Indicateur | Résultat |
 |---|---:|
-| Téléchargements | 20/20 |
-| Vérifications réussies | 40/40 |
+| Durée | environ 60 s |
+| Liens utilisés | 4 |
+| Requêtes HTTP | 31 |
+| Vérifications réussies | 62/62 |
 | Erreurs HTTP | 0 % |
-| Temps moyen | 348,74 ms |
-| Temps médian | 316,14 ms |
-| p90 | 474,06 ms |
-| p95 | 475,39 ms |
-| Temps minimal | 222,52 ms |
-| Temps maximal | 476,74 ms |
-| Débit observé | 25,136 req/s |
-| Durée effective | environ 0,8 seconde |
-| Code retour k6 | 0 |
+| Temps moyen | 215,05 ms |
+| Temps médian | 214,11 ms |
+| p90 | 217,99 ms |
+| p95 | 219,29 ms |
+| Temps minimal | 211,79 ms |
+| Temps maximal | 222,00 ms |
 
-Les deux seuils configurés sont respectés.
+Les deux vérifications fonctionnelles ont réussi pour chaque requête :
 
-## 3.5 Interprétation
+- statut HTTP 200 ;
+- fichier téléchargé non vide.
 
-Les 20 téléchargements protégés ont réussi.
+Les seuils k6 sont respectés :
 
-Ce scénario mesure un pic court et non une charge
-soutenue de 20 secondes.
+- taux d'erreur : 0 % ;
+- p95 : 219,29 ms, inférieur au seuil de 1 000 ms.
 
-L'ancienne campagne (2569 requêtes, p95 de 91,47 ms)
-a été réalisée avant les dernières modifications de sécurité.
+---
 
-Ces deux campagnes ne sont pas directement comparables.
+# 4. Comparaison du coût BCrypt
 
-## 3.6 Reproduction
+Les deux campagnes utilisent :
 
-Exécuter performance/download-test.js avec les variables :
+- le même endpoint ;
+- la même durée ;
+- la même cadence ;
+- quatre liens de téléchargement ;
+- le même nombre de requêtes.
 
-- DOWNLOAD_TOKEN : token valide et récent.
-- DOWNLOAD_PASSWORD : mot de passe du fichier.
-- BASE_URL : http://localhost:8080.
+La principale différence fonctionnelle entre les deux parcours est la vérification BCrypt effectuée pour les fichiers protégés.
 
-Les identifiants ne doivent pas être enregistrés dans Git.
+| Indicateur | Sans BCrypt | Avec BCrypt coût 12 | Écart |
+|---|---:|---:|---:|
+| Moyenne | 5,50 ms | 215,05 ms | +209,55 ms |
+| Médiane | 5,51 ms | 214,11 ms | +208,60 ms |
+| p90 | 6,33 ms | 217,99 ms | +211,66 ms |
+| p95 | 6,56 ms | 219,29 ms | +212,73 ms |
+| Maximum | 6,85 ms | 222,00 ms | +215,15 ms |
+| Erreurs HTTP | 0 % | 0 % | 0 |
 
-Exemple de commande (avec un token récent) :
+La latence moyenne observée passe de 5,50 ms sans vérification BCrypt à 215,05 ms avec BCrypt configuré avec un coût de 12.
+
+Le surcoût moyen observé est donc d'environ :
+
+```text
+215,05 ms - 5,50 ms = 209,55 ms
+```
+
+soit environ 210 ms par téléchargement protégé dans cet environnement de test.
+
+La latence moyenne du scénario avec BCrypt est environ 39 fois supérieure à celle du scénario sans vérification BCrypt.
+
+Ce facteur ne doit cependant pas être considéré comme une valeur universelle.
+
+Il dépend notamment :
+
+- de la machine utilisée ;
+- de la charge CPU ;
+- de la configuration BCrypt ;
+- de la taille des fichiers ;
+- du nombre de requêtes ;
+- de l'environnement d'exécution.
+
+---
+
+# 5. Interprétation du test de charge
+
+La campagne sans mot de passe montre que le téléchargement lui-même présente une latence faible dans l'environnement local de test.
+
+Lorsque la protection par mot de passe est activée, la vérification BCrypt avec un coût de 12 augmente nettement la latence.
+
+Ce comportement est cohérent avec le rôle de BCrypt : l'algorithme est volontairement coûteux en calcul afin de ralentir les tentatives de recherche de mot de passe.
+
+Malgré ce surcoût, le p95 de la campagne protégée reste à 219,29 ms, soit largement sous le seuil de 1 000 ms défini pour cette campagne.
+
+Les deux campagnes ont terminé avec :
+
+```text
+31 requêtes
+62/62 vérifications réussies
+0 % d'erreurs HTTP
+```
+
+Le scénario répond ainsi à deux objectifs :
+
+- vérifier le comportement du téléchargement sous une charge soutenue ;
+- mesurer comparativement le coût de la vérification BCrypt.
+
+---
+
+# 6. Limites du test k6
+
+Les résultats proviennent d'un environnement local de développement.
+
+Ils ne constituent pas une mesure de capacité maximale du serveur ni un benchmark d'un environnement de production.
+
+Les performances peuvent varier selon :
+
+- la puissance du serveur ;
+- la charge CPU ;
+- le stockage ;
+- la base de données ;
+- la taille des fichiers ;
+- le nombre de requêtes simultanées ;
+- la configuration BCrypt ;
+- l'environnement réseau.
+
+Le scénario teste principalement le parcours de téléchargement.
+
+Il ne reproduit pas simultanément les inscriptions, les connexions, les téléversements et les suppressions de fichiers.
+
+La cadence a également été limitée afin de rester compatible avec les mécanismes de rate limiting de l'application.
+
+---
+
+# 7. Reproduction du test k6
+
+Le script utilisé est :
+
+```text
+performance/download-test.js
+```
+
+## Campagne sans mot de passe
 
 ```bash
-DOWNLOAD_TOKEN="<token-valide>" \
+DOWNLOAD_TOKENS="token1,token2,token3,token4" \
+BASE_URL="http://localhost:8080" \
+k6 run performance/download-test.js
+```
+
+## Campagne avec mot de passe
+
+```bash
+DOWNLOAD_TOKENS="token1,token2,token3,token4" \
 DOWNLOAD_PASSWORD="<mot-de-passe>" \
 BASE_URL="http://localhost:8080" \
 k6 run performance/download-test.js
 ```
 
-
----
-
-# 4. Méthodologie k6
-
-Le test utilise 10 utilisateurs virtuels et 20 itérations
-partagées au total (shared-iterations).
-
-Chaque itération effectue un téléchargement protégé.
-
-Deux vérifications sont réalisées :
-- statut HTTP 200 ;
-- contenu téléchargé non vide.
-
----
-
-# 5. Analyse des résultats k6
-
-Le test du 1er octobre 2026 a obtenu :
-
-- 20 téléchargements réussis ;
-- 40 vérifications réussies sur 40 ;
-- 0 % d'erreurs HTTP ;
-- temps moyen : 348,74 ms ;
-- p95 : 475,39 ms.
-
-Les seuils configurés sont respectés :
-- taux d'erreur inférieur à 1 % ;
-- p95 inférieur à 1 000 ms.
-
----
-
-# 6. Limitations de téléchargement
-
-Le backend applique les protections suivantes :
-
-- 60 téléchargements par minute et par IP ;
-- 30 téléchargements par minute et par token.
-
-Une réponse HTTP 429 indique que la limite est atteinte.
-
-Le nouveau scénario utilise seulement 20 téléchargements
-afin de rester sous la limite par token, en utilisant
-un token récent dont le quota n'est pas déjà consommé.
-
-### Vérification réelle du HTTP 429 — 1er octobre 2026
-
-Un test fonctionnel a été exécuté avec 31 téléchargements
-successifs du même fichier protégé, pendant une seule fenêtre
-de limitation.
-
-Résultats observés :
-
-| Requêtes | Résultat |
-|---|---:|
-| 1 à 30 | HTTP 200 |
-| 31 | HTTP 429 |
-| Autres erreurs | 0 |
-| Durée du test | 7 secondes |
-
-Résultat : TEST RATE LIMITING RÉUSSI.
-
-Le filtre refuse bien la 31e requête du même token
-pendant une fenêtre de limitation.
-
----
-
-# 7. Comparaison avec l'ancien scénario
-
-L'ancienne campagne comportait 2 569 requêtes et
-un p95 de 91,47 ms.
-
-Le scénario a depuis évolué avec les protections
-de téléchargement et la configuration BCrypt.
-
-Les deux campagnes ne sont donc pas directement
-comparables pour mesurer une éventuelle régression.
-
-Le nouveau test constitue un pic court d'environ
-0,8 seconde, et non une charge soutenue de 20 secondes.
+Les tokens et les mots de passe utilisés pendant les tests ne doivent pas être enregistrés dans le dépôt Git.
 
 ---
 
 # 8. Test de performance front-end avec Lighthouse
-
-Les sections 9 à 12 conservent les mesures historiques. La nouvelle campagne Mobile et Desktop figure en section 12.1.
-
 
 ## 8.1 Objectif
 
@@ -227,205 +292,39 @@ Lighthouse permet de mesurer les performances de rendu du front-end Angular dans
 
 Contrairement à k6, Lighthouse ne mesure pas la capacité du back-end à supporter plusieurs utilisateurs simultanés.
 
-Il mesure principalement l'expérience de chargement de la page côté navigateur.
+Il mesure principalement :
+
+- la vitesse d'affichage ;
+- la stabilité visuelle ;
+- le blocage du thread principal ;
+- l'accessibilité ;
+- les bonnes pratiques ;
+- le référencement technique.
 
 ---
 
-# 9. Mesure initiale Lighthouse
+## 8.2 Dernière campagne Lighthouse
 
-Une première analyse réalisée avant les optimisations avait donné :
+La dernière campagne Lighthouse conservée dans ce rapport a été réalisée le 1er octobre 2026.
 
-```text
-Performance : 82/100
-FCP : 2,6 s
-LCP : 4,2 s
-TBT : 0 ms
-CLS : 0
-```
-
-Le principal point d'amélioration concernait le LCP.
-
-Le LCP mesurait alors :
-
-```text
-4,2 s
-```
-
----
-
-# 10. Dernière mesure historique Lighthouse
-
-Lors de la précédente campagne de mesures, Lighthouse a été exécuté sur le build Angular de production. Il ne s'agit pas d'une mesure de la dernière version de l'interface.
-
-URL testée :
-
-```text
-http://localhost:4173
-```
-
-Résultat de cette campagne :
-
-```text
-Performance : 90/100
-
-First Contentful Paint (FCP) :
-2,7 s
-
-Largest Contentful Paint (LCP) :
-3,0 s
-
-Total Blocking Time (TBT) :
-10 ms
-
-Cumulative Layout Shift (CLS) :
-0
-
-Speed Index :
-2,7 s
-```
-
----
-
-# 11. Interprétation des métriques Lighthouse — campagne historique
-
-Les valeurs de cette section correspondent à l'ancienne
-campagne Lighthouse (Performance : 90/100).
-
-Les derniers résultats, datés du 1er octobre 2026,
-figurent dans la section 12.1 : 91/100 sur Mobile
-et 100/100 sur Desktop.
-
-## Performance
-
-Résultat :
-
-```text
-90/100
-```
-
-Le score de cette campagne Lighthouse atteint 90 sur 100 dans l'environnement de test.
-
----
-
-## First Contentful Paint - FCP
-
-Résultat :
-
-```text
-2,7 s
-```
-
-Le FCP correspond au moment où le navigateur affiche le premier contenu visible de la page.
-
----
-
-## Largest Contentful Paint - LCP
-
-Résultat initial :
-
-```text
-4,2 s
-```
-
-Résultat de la campagne précédente :
-
-```text
-3,0 s
-```
-
-Le LCP s'est donc amélioré par rapport à la mesure initiale.
-
-Cette métrique correspond au temps nécessaire pour afficher le plus grand élément visible de la page.
-
----
-
-## Total Blocking Time - TBT
-
-Résultat :
-
-```text
-10 ms
-```
-
-Le TBT mesure le temps pendant lequel le thread principal du navigateur est bloqué par des tâches longues.
-
-La valeur observée reste faible pendant cette mesure.
-
----
-
-## Cumulative Layout Shift - CLS
-
-Résultat :
-
-```text
-0
-```
-
-Aucun déplacement visuel significatif n'a été détecté pendant le chargement de la page testée.
-
----
-
-## Speed Index
-
-Résultat :
-
-```text
-2,7 s
-```
-
-Le Speed Index mesure la vitesse à laquelle le contenu visible de la page apparaît progressivement.
-
----
-
-# 12. Comparaison Lighthouse avant / après
-
-| Métrique | Avant | Dernière mesure historique |
-|---|---:|---:|
-| Performance | 82/100 | 90/100 |
-| FCP | 2,6 s | 2,7 s |
-| LCP | 4,2 s | 3,0 s |
-| TBT | 0 ms | 10 ms |
-| CLS | 0 | 0 |
-| Speed Index | non relevé | 2,7 s |
-
-Le principal gain visible concerne le LCP :
-
-```text
-4,2 s
-→
-3,0 s
-```
-
-Le score global Lighthouse passe également de :
-
-```text
-82/100
-→
-90/100
-```
-
-Certaines métriques peuvent légèrement varier entre deux exécutions Lighthouse en fonction de la machine et de la charge système.
-
----
-
-## 12.1 Nouvelle campagne Lighthouse — 1er octobre 2026
-
-Cette campagne Lighthouse a été réalisée le 1er octobre 2026,
-après les modifications Angular effectuées à cette date et l'ajout
-de la balise meta description.
-
-Elle précède les ajustements des 2 et 3 octobre. Aucun nouveau score
-Lighthouse n'est revendiqué pour le build final du 3 octobre.
+Elle a été effectuée sur le build Angular de production disponible à cette date.
 
 Conditions :
+
 - Lighthouse 13.4.0 ;
 - build Angular de production ;
-- URL : http://localhost:4173/ ;
+- URL : `http://localhost:4173/` ;
 - mode Navigation ;
 - profils Mobile et Desktop ;
 - aucune alerte d'exécution.
 
-### Scores obtenus
+Cette campagne précède les derniers ajustements visuels effectués les 2 et 3 octobre 2026.
+
+Aucun nouveau score Lighthouse n'est revendiqué pour ces modifications ultérieures.
+
+---
+
+## 8.3 Scores Lighthouse
 
 | Catégorie | Mobile | Desktop |
 |---|---:|---:|
@@ -434,45 +333,48 @@ Conditions :
 | Bonnes pratiques | 100/100 | 100/100 |
 | SEO | 100/100 | 100/100 |
 
-### Métriques de performance
+---
+
+## 8.4 Métriques de performance
 
 | Métrique | Mobile | Desktop |
 |---|---:|---:|
-| FCP | 2,7 s | 0,5 s |
-| LCP | 2,9 s | 0,6 s |
-| TBT (valeur numérique JSON) | 14 ms | 0 ms |
-| CLS | 0 | 0 |
+| First Contentful Paint (FCP) | 2,7 s | 0,5 s |
+| Largest Contentful Paint (LCP) | 2,9 s | 0,6 s |
+| Total Blocking Time (TBT) | 14 ms | 0 ms |
+| Cumulative Layout Shift (CLS) | 0 | 0 |
 | Speed Index | 2,7 s | 0,5 s |
 
-L'audit meta-description est validé sur les deux profils.
+L'audit de la balise meta-description est validé sur les deux profils.
 
-Ces mesures locales ponctuelles ne constituent pas
-une garantie de performance en production.
+Les mesures montrent de très bons résultats sur Desktop.
+
+Le profil Mobile reste plus coûteux en temps de rendu, notamment pour le FCP et le LCP, mais le score de performance atteint 91/100.
+
+Ces mesures locales ponctuelles ne constituent pas une garantie de performance en production.
 
 ---
 
-# 13. Différence entre k6 et Lighthouse
+# 9. Différence entre k6 et Lighthouse
 
-Les deux outils ne répondent pas au même besoin.
+k6 et Lighthouse sont complémentaires mais ne mesurent pas les mêmes éléments.
 
 ## k6
 
-k6 mesure le comportement du serveur sous charge.
+k6 mesure principalement le comportement du serveur sous charge.
 
-Dans ce projet, il permet d'observer :
+Dans ce projet, il permet notamment d'observer :
 
 ```text
-le nombre de requêtes
-le taux d'erreur
-les temps de réponse
-le p95
-le débit
-la stabilité avec plusieurs utilisateurs virtuels
+nombre de requêtes
+taux d'erreur
+temps de réponse
+p90
+p95
+stabilité du back-end
 ```
 
-Le test k6 utilisé ici concerne principalement le back-end Spring Boot.
-
----
+Le test k6 concerne directement le back-end Spring Boot.
 
 ## Lighthouse
 
@@ -487,208 +389,37 @@ TBT
 CLS
 Speed Index
 score de performance
+accessibilité
+bonnes pratiques
+SEO
 ```
 
-Il permet donc d'évaluer la rapidité de chargement et la stabilité visuelle de l'interface.
+Un bon résultat Lighthouse ne garantit pas que le serveur supportera une charge importante.
+
+De la même manière, un bon résultat k6 ne garantit pas que l'interface sera rapide ou agréable à afficher.
+
+Les deux outils permettent donc d'analyser deux aspects différents de la performance de DataShare.
 
 ---
 
-## Complémentarité
+# 10. Budget de performance Angular
 
-Les deux outils sont complémentaires :
+## 10.1 Budgets configurés
 
-```text
-k6
-→ performance et charge côté serveur
-
-Lighthouse
-→ performance de rendu côté navigateur
-```
-
-Un bon résultat Lighthouse ne garantit pas qu'un serveur supportera une forte charge.
-
-De la même manière, un bon résultat k6 ne garantit pas que l'interface sera rapide ou agréable à afficher dans un navigateur.
-
----
-
-# 14. Performance et test de charge
-
-Il est important de distinguer les deux notions.
-
-## Test de performance
-
-Un test de performance mesure notamment :
-
-```text
-temps de réponse
-latence
-débit
-consommation de ressources
-```
-
-## Test de charge
-
-Un test de charge vérifie le comportement d'un système lorsqu'il reçoit plusieurs requêtes ou utilisateurs simultanément.
-
-Le scénario k6 de DataShare est donc un test de charge simple qui fournit également plusieurs métriques de performance.
-
-Il utilise :
-
-```text
-10 utilisateurs virtuels
-20 téléchargements au total
-durée effective : environ 0,8 seconde
-```
-
-Il ne constitue pas un test de stress ni un test permettant de déterminer la capacité maximale de l'application.
-
----
-
-# 15. Limites de l'analyse actualisée
-
-Le test k6 a été exécuté sur une machine locale avec :
-- une instance Spring Boot ;
-- PostgreSQL et le stockage local ;
-- 10 utilisateurs virtuels ;
-- seulement 20 téléchargements ;
-- un fichier protégé par mot de passe.
-
-La durée effective d'environ 0,8 seconde ne permet
-pas de conclure sur la stabilité sous charge prolongée.
-
----
-
-# 16. Limites du scénario k6
-
-Ce test concerne uniquement les téléchargements protégés.
-
-Il ne reproduit pas simultanément les inscriptions,
-connexions, téléversements et suppressions.
-
-Le comportement HTTP 429 a été vérifié séparément et validé.
-
----
-
-# 17. Améliorations possibles
-
-- Tester une charge soutenue compatible avec les limites.
-- Conserver une preuve du test HTTP 429 dans le dossier de validation.
-- Tester différentes tailles de fichiers.
-- Répéter les mesures Lighthouse pour observer leur variabilité.
-- Comparer plusieurs campagnes dans des conditions identiques.
-
----
-
-# 18. Résumé des résultats actualisés
-
-## Backend : k6, 1er octobre 2026
-
-- 10 VUs.
-- 20 téléchargements réussis.
-- 40/40 vérifications réussies.
-- 0 % d'erreurs HTTP.
-- Temps moyen : 348,74 ms.
-- p95 : 475,39 ms.
-- Seuil p95 inférieur à 1000 ms : respecté.
-
-## Frontend : Lighthouse, 1er octobre 2026
-
-| Catégorie | Mobile | Desktop |
-|---|---:|---:|
-| Performance | 91/100 | 100/100 |
-| Accessibilité | 100/100 | 100/100 |
-| Bonnes pratiques | 100/100 | 100/100 |
-| SEO | 100/100 | 100/100 |
-
-La balise meta description est désormais validée.
-
----
-
-# 19. Budget de performance du frontend
-
-## 19.1 Budget Angular configuré
-
-Le fichier `frontend/angular.json` définit des budgets
-pour la compilation de production :
+Le fichier `frontend/angular.json` définit des budgets pour la compilation de production.
 
 | Type de budget | Avertissement | Erreur bloquante |
 |---|---:|---:|
 | Bundle initial (`initial`) | 500 kB | 1 MB |
 | Style individuel (`anyComponentStyle`) | 5 kB | 8 kB |
 
-Ces budgets permettent de repérer une augmentation excessive
-de la taille de l'application avant sa livraison.
+Ces budgets permettent de détecter une augmentation excessive de la taille de l'application avant sa livraison.
 
-### Traitement des anciens avertissements SCSS
+---
 
-Lors de la revue précédente, le seuil d'avertissement des
-styles individuels était fixé à 4 kB.
+## 10.2 Dernier build de production
 
-Deux fichiers dépassaient ce seuil :
-
-| Fichier | Taille constatée | Ancien seuil |
-|---|---:|---:|
-| `history.component.scss` | 4,34 kB | 4 kB |
-| `upload.component.scss` | 4,08 kB | 4 kB |
-
-Le budget a ensuite été ajusté à 5 kB pour l'avertissement
-et 8 kB pour l'erreur bloquante.
-
-Cette modification est un ajustement explicite de la
-configuration de contrôle : elle ne doit pas être présentée
-comme une optimisation mesurée de ces deux fichiers CSS.
-
-La compilation actuelle n'émet plus d'avertissement de budget.
-Le poids total du bundle reste suivi séparément, avec un
-seuil d'avertissement initial de 500 kB.
-
-Les prochaines évolutions devront tenir compte de ces budgets
-et privilégier la réduction des styles redondants si leur
-volume augmente.
-
-## 19.2 Mesure de référence — 2 octobre 2026
-
-Cette mesure précède les derniers ajustements visuels de l'interface mobile.
-
-Commande exécutée :
-
-```bash
-cd frontend
-npm run build
-```
-
-Résultat de la compilation :
-
-| Fichier | Taille brute | Transfert estimé |
-|---|---:|---:|
-| main | 332,50 kB | 82,60 kB |
-| polyfills | 34,59 kB | 11,33 kB |
-| styles | 782 octets | 782 octets |
-| **Total initial** | **367,87 kB** | **94,71 kB** |
-
-Autres observations :
-
-- génération terminée en 1,980 seconde ;
-- code retour du build : 0 ;
-- aucun avertissement de budget émis ;
-- bundle initial inférieur de 132,13 kB au seuil
-  d'avertissement de 500 kB.
-
-La taille brute du bundle et son transfert estimé sont
-deux métriques différentes : le budget Angular initial
-ne doit pas être comparé uniquement aux 94,71 kB
-de transfert estimé.
-
-Les anciens avertissements concernant certains fichiers
-SCSS ne sont pas reproduits lors de cette compilation.
-Cela décrit le résultat actuel, sans constituer une
-garantie pour les futures modifications.
-
-## 19.2.1 Build intermédiaire après ajustements Figma
-
-Une nouvelle compilation de production a été effectuée
-le 2 octobre 2026 à 15 h 30, après les corrections
-responsive de l'interface.
+La dernière mesure conservée correspond au build réalisé le 3 octobre 2026 après les corrections visuelles et l'ajout des formats.
 
 Commande :
 
@@ -697,33 +428,7 @@ cd frontend
 npm run build
 ```
 
-Résultat :
-
-| Fichier | Taille brute | Transfert estimé |
-|---|---:|---:|
-| main | 337,20 kB | 83,65 kB |
-| polyfills | 34,59 kB | 11,33 kB |
-| styles | 5,50 kB | 1,22 kB |
-| **Total initial** | **377,29 kB** | **96,21 kB** |
-
-- Build réussi (code retour 0).
-- Aucun avertissement de budget Angular.
-- Taille brute inférieure au seuil d'avertissement
-  initial de 500 kB.
-- Augmentation de 9,42 kB par rapport à la mesure
-  de référence de 367,87 kB.
-
-Les 40 tests Angular ont également réussi lors
-de cette campagne intermédiaire.
-
-Cette mesure actualise le suivi technique sans
-effacer le résultat de référence précédent.
-
-## 19.2.2 Dernier build après ajout des formats — 3 octobre 2026
-
-Dernière compilation après les corrections visuelles Figma.
-
-Commande : `npm run build`
+Résultats :
 
 | Fichier | Taille brute | Transfert estimé |
 |---|---:|---:|
@@ -732,67 +437,68 @@ Commande : `npm run build`
 | styles | 7,06 kB | 1,52 kB |
 | **Total initial** | **380,46 kB** | **96,89 kB** |
 
-Résultats :
-- 44 tests Angular réussis sur 44 ;
-- compilation réussie ;
-- code retour 0 ;
-- aucun avertissement de budget ;
-- seuil d'avertissement initial Angular : 500 kB.
+La compilation est réussie.
 
-Preuve : `reports/evidence/frontend-bundle-metrics.png`.
+Le bundle initial de 380,46 kB reste inférieur au seuil d'avertissement Angular de 500 kB.
 
-La mesure précédente de 377,29 kB est conservée
-dans la section 19.2.1 à titre historique.
+Aucun avertissement de budget n'est émis pendant cette compilation.
 
-## 19.3 Comparaison des campagnes k6 et BCrypt
+La taille brute du bundle et le transfert estimé correspondent à deux métriques différentes.
 
-| Indicateur | Campagne historique | Campagne du 1er octobre |
-|---|---:|---:|
-| Nombre de requêtes | 2 569 | 20 |
-| p95 | 91,47 ms | 475,39 ms |
-| Téléchargement protégé par mot de passe | Conditions différentes | Oui |
-| Rate limiting actuel | Avant les dernières protections | Actif |
-
-Le coût BCrypt configuré pour la vérification des mots
-de passe est de 12.
-
-Cette vérification effectue un travail cryptographique
-et peut contribuer au temps de traitement serveur.
-Cependant, les mesures disponibles ne permettent pas
-de quantifier séparément son impact.
-
-En effet, les deux campagnes ne présentent pas le même
-volume, les mêmes conditions de sécurité ni exactement
-le même parcours fonctionnel.
-
-Il serait donc incorrect d'attribuer directement
-la différence de p95 à BCrypt seul.
-
-Pour isoler cet impact, une étude ultérieure devra
-répéter un scénario identique, sur une machine stable,
-avec les mêmes données, la même concurrence et des
-mesures détaillées du temps passé côté backend.
-
-## 19.4 Suivi recommandé
-
-Après chaque changement significatif de l'interface :
-
-1. exécuter `npm run build` ;
-2. vérifier les budgets Angular et les avertissements ;
-3. comparer le dernier build (380,46 kB) à la mesure de référence (367,87 kB) ;
-4. renouveler les tests Lighthouse si le rendu change ;
-5. documenter les nouvelles mesures dans ce rapport.
-
-Après un changement du téléchargement ou de la sécurité
-backend, renouveler k6 avec un protocole reproductible
-et compatible avec les quotas de rate limiting.
+Le budget Angular `initial` doit être comparé à la taille brute générée et non uniquement au transfert estimé.
 
 ---
 
-# 20. Conclusion
+# 11. Limites générales de l'analyse
 
-Les seuils k6 sont respectés pendant le nouveau scénario
-local de 20 téléchargements protégés.
+Les mesures de ce rapport ont été réalisées localement.
 
-Ce résultat ne permet pas d'estimer la capacité maximale
-du serveur ni sa stabilité sous charge prolongée.
+Elles permettent de comparer des scénarios et de détecter des régressions, mais elles ne permettent pas de prédire exactement le comportement de l'application en production.
+
+Pour une analyse plus complète, il serait possible de compléter ces tests par :
+
+- des campagnes plus longues ;
+- différents niveaux de concurrence ;
+- différentes tailles de fichiers ;
+- un suivi CPU et mémoire du serveur ;
+- un environnement de préproduction ;
+- des mesures Lighthouse après chaque modification importante de l'interface.
+
+Les résultats présentés ici correspondent aux dernières campagnes effectivement mesurées et conservées dans le rapport.
+
+---
+
+# 12. Conclusion
+
+La campagne k6 finale repose sur une charge soutenue de 60 secondes répartie sur quatre liens de téléchargement.
+
+Deux scénarios identiques ont été comparés :
+
+- téléchargement sans vérification BCrypt ;
+- téléchargement protégé avec BCrypt configuré avec un coût de 12.
+
+Les deux campagnes ont exécuté 31 requêtes avec 0 % d'erreurs HTTP.
+
+La latence moyenne observée est de :
+
+```text
+Sans BCrypt : 5,50 ms
+Avec BCrypt : 215,05 ms
+```
+
+Le surcoût moyen observé pour la vérification BCrypt est donc d'environ 210 ms dans l'environnement local de test.
+
+Le p95 du scénario protégé atteint 219,29 ms et reste inférieur au seuil de 1 000 ms défini pour cette campagne.
+
+La campagne permet ainsi d'isoler de manière comparative le coût de BCrypt tout en vérifiant le comportement du téléchargement pendant une charge soutenue sur plusieurs liens.
+
+La dernière campagne Lighthouse disponible obtient :
+
+```text
+Mobile : 91/100
+Desktop : 100/100
+```
+
+Enfin, le dernier build Angular présente un bundle initial de 380,46 kB, inférieur au seuil d'avertissement de 500 kB.
+
+k6, Lighthouse et les budgets Angular apportent ainsi trois niveaux complémentaires de contrôle des performances de DataShare.

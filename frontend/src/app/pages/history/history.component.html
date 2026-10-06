@@ -191,8 +191,26 @@
 
           <div class="file-main">
 
-            <strong>
-              {{ file.originalName }}
+            <strong
+              [title]="file.originalName"
+            >
+              <span class="file-name-desktop">
+                {{ file.originalName }}
+              </span>
+
+              <span class="file-name-mobile">
+                <ng-container
+                  *ngIf="file.originalName.length > 40"
+                >
+                  {{ file.originalName | slice:0:21 }}.....{{ file.originalName | slice:-15 }}
+                </ng-container>
+
+                <ng-container
+                  *ngIf="file.originalName.length <= 40"
+                >
+                  {{ file.originalName }}
+                </ng-container>
+              </span>
 
               <span
                 class="desktop-file-lock"

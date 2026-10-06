@@ -8,48 +8,58 @@ Elle n'a pas remplacé la compréhension, la validation ou la responsabilité hu
 
 ---
 
-## 2. Utilisation générale
+## 2. Périmètre de l'utilisation de l'IA
 
-L'IA a notamment été utilisée pour :
+L'intelligence artificielle a notamment été utilisée pour :
 
 - expliquer des notions techniques ;
-- analyser des erreurs ;
+- analyser des messages d'erreur ;
 - aider au diagnostic ;
 - proposer des pistes d'implémentation ;
-- expliquer du code ;
-- aider à écrire ou améliorer certains tests ;
-- relire des choix techniques ;
-- aider à structurer la documentation.
+- expliquer du code existant ;
+- proposer des commandes de vérification ;
+- aider à préparer ou améliorer certains tests ;
+- aider à interpréter les résultats de tests ;
+- relire certains choix techniques ;
+- aider à structurer et réviser la documentation.
 
-Les propositions n'ont pas été considérées comme automatiquement correctes.
+Certaines propositions ont pu contenir du code, des commandes ou des exemples de correction.
 
-### Périmètre complémentaire de l'assistance
+Ces propositions n'ont pas été considérées comme automatiquement correctes.
 
-Au-delà de la User Story historique consacrée au téléchargement
-par token, l'assistance IA a également été utilisée pendant
-l'évolution générale de DataShare pour :
+Elles ont été :
 
-- proposer et expliquer certaines modifications Java et Angular ;
-- préparer, adapter et analyser des tests automatisés ;
-- aider à diagnostiquer les erreurs de compilation et d'exécution ;
-- proposer des commandes de contrôle Maven, npm, k6 et Lighthouse ;
-- accompagner l'analyse des rapports de sécurité npm et OWASP ;
-- contribuer à la rédaction et à la révision des documents
-  `API.md`, `TESTING.md`, `SECURITY.md`, `MAINTENANCE.md`
-  et `PERF.md` ;
-- suggérer des corrections de cohérence entre le code
-  et la documentation.
+```text
+relues
+↓
+comprises
+↓
+adaptées si nécessaire
+↓
+testées localement
+↓
+corrigées en cas d'erreur
+```
 
-Certaines propositions comprenaient du code, des commandes
-ou des paragraphes directement réutilisables. Elles ont été
-examinées et vérifiées à partir des résultats réellement
-observés sur l'environnement local avant leur conservation.
+La traçabilité Git historique explicite de code développé avec assistance IA concerne principalement la User Story :
 
-La User Story décrite dans les sections suivantes demeure
-l'exemple historique spécifiquement tracé dans Git.
-Elle ne représente pas la totalité des interventions de l'IA.
+**Télécharger un fichier partagé à partir de son token.**
 
+Elle est associée au commit :
 
+```text
+3207354 feat(ai): implement file download by token
+```
+
+Une correction issue de la revue humaine est ensuite tracée par :
+
+```text
+40e879e fix(download): handle invalid content type after human review
+```
+
+Les autres interventions de l'IA correspondent principalement à de l'assistance au diagnostic, à l'explication, aux tests et à la documentation.
+
+Elles ne doivent pas être présentées comme du code historiquement généré par IA lorsqu'aucune trace Git spécifique ne permet de l'établir.
 
 ---
 
@@ -73,37 +83,39 @@ corriger si nécessaire
 relancer la non-régression
 ```
 
-La responsabilité des commandes exécutées et du code intégré reste humaine.
+La responsabilité des commandes exécutées, du code intégré et des décisions techniques reste humaine.
 
 ---
 
-## 4. User Story tracée
+## 4. User Story historiquement tracée
 
-La User Story spécifiquement identifiée pour l'utilisation de l'IA est :
+La User Story spécifiquement identifiée dans Git pour l'utilisation de l'IA est :
 
 **Télécharger un fichier partagé à partir de son token.**
-
-Le développement correspondant a été tracé dans Git.
 
 Commit d'implémentation :
 
 ```text
-feat(ai): implement file download by token
+3207354 feat(ai): implement file download by token
 ```
+
+Cette fonctionnalité constitue l'exemple historique explicitement traçable de code développé avec assistance IA.
 
 ---
 
-## 5. Fonctionnalités concernées
+## 5. Fonctionnalités concernées par cette User Story
 
-L'assistance IA a notamment contribué à proposer une implémentation permettant :
+L'assistance IA a contribué à proposer une implémentation permettant notamment :
 
 - de rechercher un fichier avec son token ;
 - de vérifier l'existence du token ;
-- de vérifier l'expiration ;
+- de vérifier l'expiration du fichier ;
 - de retrouver le fichier physique ;
 - de construire la réponse de téléchargement ;
 - d'exposer les endpoints nécessaires ;
 - d'intégrer le parcours frontend correspondant.
+
+Ces propositions ont ensuite été relues et validées sur l'environnement local.
 
 ---
 
@@ -116,10 +128,10 @@ token valide
 → téléchargement
 
 token inconnu
-→ 404
+→ erreur 404
 
 token expiré
-→ 410
+→ erreur 410
 ```
 
 Le fonctionnement côté Angular a également été vérifié.
@@ -130,7 +142,7 @@ Le fonctionnement côté Angular a également été vérifié.
 
 Le code n'a pas été accepté uniquement parce qu'il avait été proposé avec l'assistance de l'IA.
 
-Une relecture a été réalisée sur :
+Une relecture a notamment été réalisée sur :
 
 ```text
 codes HTTP
@@ -141,15 +153,17 @@ accès au fichier physique
 comportement avec les tokens
 ```
 
+Cette relecture permet de vérifier que le comportement correspond réellement aux exigences fonctionnelles.
+
 ---
 
-## 8. Anomalie détectée
+## 8. Exemple d'anomalie détectée après assistance IA
 
-Pendant la revue, un problème potentiel a été identifié concernant le Content-Type.
+Pendant la revue, un problème potentiel a été identifié concernant le `Content-Type`.
 
-Une valeur MIME invalide pouvait provoquer une erreur lors de la construction de la réponse HTTP.
+Une valeur MIME invalide pouvait provoquer une erreur pendant la construction de la réponse HTTP.
 
-Une correction humaine a donc été réalisée pour prévoir un fallback :
+Une correction humaine a donc été réalisée afin de prévoir un fallback :
 
 ```text
 application/octet-stream
@@ -158,16 +172,18 @@ application/octet-stream
 Commit historique de correction :
 
 ```text
-fix(download): handle invalid content type after human review
+40e879e fix(download): handle invalid content type after human review
 ```
+
+Cet exemple montre qu'une proposition assistée par IA peut nécessiter une correction après analyse humaine.
 
 ---
 
 ## 9. État actuel de cette correction
 
-Le comportement est toujours présent dans la version actuelle du projet.
+Le comportement corrigé est toujours présent dans la version actuelle du projet.
 
-Le contrôleur de téléchargement tente d'utiliser le Content-Type du fichier.
+Le contrôleur de téléchargement tente d'utiliser le `Content-Type` associé au fichier.
 
 Si celui-ci est invalide ou inexploitable, le backend utilise :
 
@@ -175,31 +191,43 @@ Si celui-ci est invalide ou inexploitable, le backend utilise :
 application/octet-stream
 ```
 
-Cette logique est désormais également couverte par un test automatisé.
+Cette logique est également couverte par un test automatisé.
 
 ---
 
-## 10. Évolution du projet
+## 10. Évolution de la fonctionnalité
 
 Depuis l'implémentation initiale de la User Story, le projet a évolué.
 
-Le téléchargement prend maintenant également en charge la protection des fichiers par mot de passe.
+Le téléchargement prend désormais également en charge la protection des fichiers par mot de passe.
 
-Le mot de passe est envoyé via :
+Le mot de passe est transmis avec l'en-tête :
 
 ```text
 X-Download-Password
 ```
 
-et contrôlé par le backend avec BCrypt.
+Le backend vérifie ensuite le mot de passe avec BCrypt.
 
-Cette évolution ne change pas le principe de la revue humaine appliquée au code.
+Cette évolution ne change pas le principe appliqué pendant le développement :
+
+```text
+proposition
+↓
+compréhension
+↓
+vérification
+↓
+tests
+↓
+validation humaine
+```
 
 ---
 
 ## 11. Tests actuels
 
-La dernière validation du backend (3 octobre 2026) comprend :
+La validation actuelle du backend comprend :
 
 ```text
 58 tests
@@ -210,59 +238,94 @@ La dernière validation du backend (3 octobre 2026) comprend :
 Le frontend comprend :
 
 ```text
-44 tests Angular (3 octobre 2026)
+52 tests Angular
 ```
 
 Les tests End-to-End comprennent :
 
 ```text
-3 scénarios Playwright
+7 scénarios Playwright
+7 réussis
 ```
 
-Les tests ne prouvent pas que le code est parfait, mais ils constituent un moyen de contrôler les propositions et de limiter les régressions.
+Ces tests ne prouvent pas que le code est parfait, mais ils permettent de vérifier les comportements attendus et de limiter les régressions après les modifications.
 
 ---
 
-## 12. Analyse statique et qualité
+## 12. Couverture et contrôles de qualité
 
-Les contrôles finaux comprennent notamment :
-
-```text
-ESLint : succès
-SpotBugs : 0 bug / 0 erreur
-```
-
-Couverture backend finale :
+La couverture backend mesurée lors de la dernière campagne comprend notamment :
 
 ```text
-Instructions : 91,64 % (1930 / 2106)
-Branches : 72,31 % (175 / 242)
-Lignes : 91,89 % (612 / 666)
+Instructions : 91,64 %
+Branches : 72,31 %
+Lignes : 91,89 %
 ```
+
+Les classes spécifiquement vérifiées dans le cadre des corrections comprennent notamment :
+
+```text
+FileService
+DownloadController
+```
+
+Le frontend dispose également d'une couverture supérieure au seuil de 70 % sur les lignes.
+
+Ces métriques sont utilisées comme éléments de contrôle et non comme preuve unique de qualité du code.
 
 ---
 
 ## 13. Traçabilité Git
 
-Les commits historiques permettent de distinguer :
+Les commits historiques explicitement liés à l'assistance IA sont :
 
 ```text
 3207354 feat(ai): implement file download by token
 40e879e fix(download): handle invalid content type after human review
 ```
 
-Cette séparation montre :
+Cette séparation permet d'illustrer le cycle suivant :
 
 ```text
-proposition initiale
-→ revue
-→ anomalie identifiée
-→ correction
+proposition assistée
+        ↓
+implémentation
+        ↓
+relecture humaine
+        ↓
+anomalie identifiée
+        ↓
+correction
+        ↓
+validation
 ```
+
+La traçabilité Git explicite ne doit pas être étendue artificiellement à des parties du projet pour lesquelles aucune trace historique spécifique n'existe.
 
 ---
 
-## 14. Ce que l'IA n'a pas décidé seule
+## 14. Assistance au diagnostic et aux tests
+
+En dehors de la User Story historiquement tracée, l'IA a également été utilisée comme aide pour :
+
+- comprendre des erreurs de compilation ;
+- comprendre des erreurs de démarrage du backend ;
+- diagnostiquer des problèmes PostgreSQL ;
+- interpréter les résultats Maven ;
+- interpréter les résultats Angular ;
+- préparer des commandes k6 ;
+- analyser les résultats de tests de charge ;
+- comparer les performances avec et sans BCrypt ;
+- aider à lire les rapports de couverture ;
+- structurer certains documents techniques.
+
+Dans ces cas, l'IA intervient principalement comme outil d'explication et d'assistance.
+
+Les résultats réellement observés sur la machine de développement restent la référence pour valider ou rejeter une proposition.
+
+---
+
+## 15. Ce que l'IA n'a pas décidé seule
 
 L'IA n'a pas eu l'autorité finale sur :
 
@@ -271,22 +334,44 @@ L'IA n'a pas eu l'autorité finale sur :
 - la validation fonctionnelle ;
 - la conservation d'une solution ;
 - les corrections ;
-- les commits Git.
+- les commits Git ;
+- l'acceptation finale d'une fonctionnalité.
 
-La validation reste réalisée à partir :
+La validation repose sur :
 
 ```text
-du code
-des tests
-du comportement observé
-des exigences du projet
+le code
+les tests
+le comportement observé
+les exigences du projet
+la compréhension du développeur
 ```
+
+---
+
+## 16. Principes retenus
+
+L'utilisation de l'IA dans DataShare repose sur les principes suivants :
+
+- ne pas intégrer une proposition sans la comprendre ;
+- vérifier le comportement réel du code ;
+- exécuter les tests nécessaires ;
+- corriger les propositions erronées ;
+- ne pas inventer de traçabilité Git ;
+- distinguer assistance au développement et code historiquement tracé comme assisté par IA ;
+- rester capable d'expliquer le code présenté en soutenance.
 
 ---
 
 ## Conclusion
 
-L'utilisation de l'IA dans DataShare suit un principe de supervision humaine :
+L'intelligence artificielle a été utilisée dans DataShare comme outil d'assistance et d'apprentissage.
+
+La User Story de téléchargement par token constitue l'exemple historiquement tracé dans Git de code développé avec assistance IA.
+
+Les autres usages concernent principalement l'explication, le diagnostic, les tests, l'interprétation des résultats et la documentation.
+
+Le fonctionnement retenu reste :
 
 ```text
 IA comme assistant
@@ -297,9 +382,9 @@ relecture
         ↓
 tests
         ↓
-correction
+correction si nécessaire
         ↓
-traçabilité
+validation humaine
 ```
 
-L'exemple du Content-Type invalide montre concrètement qu'une proposition assistée par IA peut nécessiter une correction après analyse humaine.
+L'exemple de la correction du `Content-Type` montre concrètement qu'une proposition assistée par IA peut être incorrecte ou incomplète et doit être vérifiée avant d'être conservée.

@@ -2,19 +2,26 @@
 
 ## 1. Objectif
 
-Ce document présente une revue technique du code associé à la User Story développée avec l'assistance d'une IA.
+Ce document présente la revue technique du code associé à la User Story historiquement tracée dans Git comme ayant été développée avec l'assistance d'une IA.
 
-L'objectif est de montrer que le code proposé n'a pas été intégré sans contrôle.
+L'objectif est de montrer que le code proposé n'a pas été intégré sans contrôle humain.
 
-La démarche appliquée est :
+La démarche suivie est :
 
 ```text
-proposition
-→ relecture
-→ test
-→ identification des risques
-→ correction
-→ test de non-régression
+proposition assistée
+        ↓
+relecture
+        ↓
+test
+        ↓
+identification des risques
+        ↓
+correction si nécessaire
+        ↓
+test de non-régression
+        ↓
+validation humaine
 ```
 
 ---
@@ -27,7 +34,7 @@ La fonctionnalité concernée est :
 
 Cette fonctionnalité permet notamment :
 
-- de rechercher le fichier grâce au token ;
+- de rechercher un fichier grâce au token ;
 - de contrôler son existence ;
 - de contrôler son expiration ;
 - de vérifier le fichier physique ;
@@ -35,11 +42,13 @@ Cette fonctionnalité permet notamment :
 - de construire la réponse HTTP ;
 - de télécharger le fichier.
 
+Cette User Story constitue l'exemple historiquement traçable dans Git de code développé avec assistance IA.
+
 ---
 
 ## 3. Architecture revue
 
-Le backend respecte l'organisation :
+Le backend respecte l'organisation suivante :
 
 ```text
 Controller
@@ -51,9 +60,9 @@ Repository
 PostgreSQL / stockage local
 ```
 
-Responsabilités vérifiées :
-
 ### Controller
+
+Le contrôleur gère notamment :
 
 ```text
 requête HTTP
@@ -65,15 +74,19 @@ Content-Disposition
 
 ### Service
 
+Le service prend en charge notamment :
+
 ```text
 règles métier
 token
 expiration
-mot de passe fichier
+mot de passe du fichier
 accès au fichier
 ```
 
 ### Repository
+
+Le repository intervient principalement pour :
 
 ```text
 recherche des métadonnées
@@ -86,17 +99,17 @@ persistance
 
 La revue a porté notamment sur :
 
-- codes HTTP ;
-- token valide ;
-- token invalide ;
-- token expiré ;
-- existence du fichier ;
-- type MIME ;
-- Content-Disposition ;
-- taille ;
-- accès au fichier physique ;
-- erreurs ;
-- mot de passe du fichier dans la version actuelle.
+- les codes HTTP ;
+- le comportement avec un token valide ;
+- le comportement avec un token invalide ;
+- le comportement avec un token expiré ;
+- l'existence du fichier ;
+- le type MIME ;
+- le `Content-Disposition` ;
+- la taille du fichier ;
+- l'accès au fichier physique ;
+- la gestion des erreurs ;
+- la protection par mot de passe dans la version actuelle.
 
 ---
 
@@ -104,7 +117,7 @@ La revue a porté notamment sur :
 
 Une anomalie avait été identifiée concernant le type MIME utilisé pendant le téléchargement.
 
-Une valeur invalide passée directement à :
+Une valeur invalide transmise directement à :
 
 ```text
 MediaType.parseMediaType(...)
@@ -118,9 +131,9 @@ Le téléchargement pouvait donc échouer alors que le fichier physique était v
 
 ## 6. Correction humaine
 
-La correction consiste à tenter de parser le Content-Type.
+La correction consiste à tenter d'interpréter le `Content-Type`.
 
-Si la valeur est invalide, le backend utilise :
+Si la valeur est invalide ou inexploitable, le backend utilise :
 
 ```text
 application/octet-stream
@@ -131,8 +144,10 @@ Le téléchargement peut alors continuer avec un type générique.
 Cette correction correspond au commit historique :
 
 ```text
-fix(download): handle invalid content type after human review
+40e879e fix(download): handle invalid content type after human review
 ```
+
+Cet exemple montre qu'une proposition assistée par IA n'est pas considérée comme correcte sans vérification.
 
 ---
 
@@ -140,7 +155,7 @@ fix(download): handle invalid content type after human review
 
 La version actuelle du `DownloadController` conserve ce principe.
 
-Le comportement est :
+Le comportement attendu est :
 
 ```text
 Content-Type valide
@@ -158,7 +173,7 @@ Ce comportement est maintenant vérifié par un test automatisé du contrôleur.
 
 Le téléchargement a ensuite évolué pour supporter les fichiers protégés par mot de passe.
 
-Header utilisé :
+Le header utilisé est :
 
 ```text
 X-Download-Password
@@ -179,7 +194,9 @@ fichier protégé + bon mot de passe
 → 200
 ```
 
-Les anciens fichiers sans mot de passe restent pris en charge.
+Les fichiers sans mot de passe restent également pris en charge.
+
+Cette évolution est postérieure à l'implémentation historique de la User Story et ne modifie pas le principe de supervision humaine appliqué au code.
 
 ---
 
@@ -191,7 +208,7 @@ Les tests couvrent notamment :
 métadonnées de téléchargement
 téléchargement réussi
 mot de passe
-403
+erreurs 403
 Content-Type
 fallback application/octet-stream
 fichier physique
@@ -199,7 +216,7 @@ tokens
 expiration
 ```
 
-Dernier résultat backend (3 octobre 2026) :
+La validation actuelle du backend comprend :
 
 ```text
 58 tests
@@ -212,59 +229,69 @@ BUILD SUCCESS
 
 ## 10. Tests globaux
 
-Validation frontend :
+### Frontend
+
+La validation Angular actuelle comprend :
 
 ```text
-44 tests Angular réussis (3 octobre 2026)
-ESLint : succès
+52 tests Angular réussis
 ```
 
-Validation End-to-End :
+### End-to-End
+
+La validation Playwright actuelle comprend :
 
 ```text
-3 tests Playwright réussis
+7 scénarios Playwright
+7 réussis
 ```
 
-Analyse backend :
+### Backend
 
-```text
-SpotBugs : 0 bug
-SpotBugs : 0 erreur
-```
+Les contrôles backend comprennent également les tests automatisés et les mesures de couverture.
+
+Ces validations permettent de limiter le risque de régression après les modifications.
 
 ---
 
 ## 11. Couverture
 
-Derniers résultats JaCoCo (3 octobre 2026) :
+La dernière campagne de couverture backend comprend notamment :
 
 ```text
-Instructions : 91,64 % (1930 / 2106)
-Branches : 72,31 % (175 / 242)
-Lignes : 91,89 % (612 / 666)
+Instructions : 91,64 %
+Branches : 72,31 %
+Lignes : 91,89 %
+```
+
+Dans le cadre des corrections demandées, les classes suivantes ont également été vérifiées spécifiquement :
+
+```text
+FileService
+DownloadController
 ```
 
 La couverture ne prouve pas que le code est sans erreur.
 
-Elle permet seulement de savoir quelles parties ont été exécutées pendant les tests.
+Elle permet de vérifier quelles parties du code ont été exécutées pendant les tests et de repérer des zones insuffisamment testées.
 
 ---
 
 ## 12. Traçabilité Git
 
-Implémentation initiale assistée par IA :
+L'implémentation historique explicitement tracée avec assistance IA est :
 
 ```text
 3207354 feat(ai): implement file download by token
 ```
 
-Correction après revue humaine :
+La correction après revue humaine est :
 
 ```text
 40e879e fix(download): handle invalid content type after human review
 ```
 
-Cette séparation permet de montrer concrètement :
+Cette séparation permet d'illustrer le cycle suivant :
 
 ```text
 contribution assistée par IA
@@ -274,7 +301,15 @@ analyse humaine
 problème identifié
         ↓
 correction humaine
+        ↓
+tests
+        ↓
+validation
 ```
+
+Cette traçabilité Git explicite concerne cette User Story.
+
+Elle ne doit pas être étendue artificiellement à d'autres parties du projet lorsqu'aucune trace historique spécifique ne permet de le démontrer.
 
 ---
 
@@ -287,15 +322,35 @@ Les propositions de l'IA ont été évaluées à partir de :
 - les exigences fonctionnelles ;
 - les tests ;
 - les résultats d'exécution ;
-- les erreurs observées.
+- les erreurs observées ;
+- le comportement réel de l'application.
 
-Le code n'est pas considéré correct simplement parce qu'il compile ou parce qu'il est proposé par un outil d'IA.
+Le code n'est pas considéré comme correct simplement parce qu'il compile ou parce qu'il est proposé par un outil d'IA.
+
+La décision finale de conserver, modifier ou rejeter une proposition reste humaine.
 
 ---
 
-## 14. Limites
+## 14. Relation avec les autres usages de l'IA
 
-Les tests automatisés et les analyses statiques réduisent le risque de régression mais ne garantissent pas :
+L'IA a également été utilisée dans le projet comme outil d'assistance pour :
+
+- comprendre des erreurs ;
+- diagnostiquer des problèmes ;
+- expliquer du code ;
+- préparer certaines commandes ;
+- aider à interpréter les résultats de tests ;
+- aider à structurer la documentation.
+
+Ces usages ne sont pas présentés comme des portions de code historiquement générées par IA lorsqu'aucune trace Git spécifique ne permet de l'établir.
+
+Le document `AI_USAGE.md` décrit ce périmètre plus général.
+
+---
+
+## 15. Limites
+
+Les tests automatisés et les analyses de couverture réduisent le risque de régression, mais ne garantissent pas :
 
 ```text
 absence totale de bugs
@@ -310,18 +365,32 @@ Une revue humaine reste nécessaire.
 
 ## Conclusion
 
-L'utilisation de l'IA sur cette fonctionnalité est accompagnée d'une supervision humaine identifiable.
+L'utilisation de l'IA sur la User Story de téléchargement par token est accompagnée d'une supervision humaine identifiable.
 
-Le cas du Content-Type montre une démarche complète :
+Le cas du `Content-Type` montre une démarche complète :
 
 ```text
 implémentation assistée
-→ revue
-→ défaut potentiel détecté
-→ correction
-→ test
-→ non-régression
-→ traçabilité Git
+        ↓
+revue
+        ↓
+défaut potentiel détecté
+        ↓
+correction
+        ↓
+test
+        ↓
+non-régression
+        ↓
+traçabilité Git
+```
+
+Les résultats actuels comprennent :
+
+```text
+58 tests backend réussis
+52 tests Angular réussis
+7 scénarios Playwright réussis
 ```
 
 La responsabilité finale du code conservé dans DataShare reste humaine.

@@ -95,8 +95,13 @@
 }
 
 .file-main strong {
+  min-width: 0;
+  overflow: hidden;
   font-size: 13px;
-  overflow-wrap: anywhere;
+}
+
+.file-name-mobile {
+  display: none;
 }
 
 .file-main > span {
@@ -301,6 +306,14 @@
 
   .file-main {
     min-width: 0;
+  }
+
+  .file-name-desktop {
+    display: none;
+  }
+
+  .file-name-mobile {
+    display: inline;
   }
 
   /* Les boutons restent disponibles sur ordinateur,
